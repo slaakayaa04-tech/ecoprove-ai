@@ -1,0 +1,5 @@
+streamlit
+pandas
+web3
+pycryptodome
+python-dotenv
