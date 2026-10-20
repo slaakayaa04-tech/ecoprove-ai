@@ -249,9 +249,9 @@ a {{color: #6ee7b7 !important;}}
     border-right: 1px solid rgba(110, 231, 183, 0.24) !important;
 }}
 [data-testid="stSidebarContent"] {{background: transparent !important;}}
-.brand {{font-size: 1.35rem; font-weight: 800;
-        background: linear-gradient(90deg, #f0fdf4, #86efac, #67e8f9);
-        -webkit-background-clip: text; background-clip: text; color: transparent;}}
+.brand {{font-size: 1.35rem; font-weight: 800; color: #f0fdf4;}}
+.brand span {{background: linear-gradient(90deg, #f0fdf4, #86efac, #67e8f9);
+              -webkit-background-clip: text; background-clip: text; color: transparent;}}
 .brand-sub {{font-size: .82rem; color: #bbf7d0; margin-bottom: .6rem;}}
 
 /* ---------- Live network widget ---------- */
@@ -285,9 +285,9 @@ a {{color: #6ee7b7 !important;}}
        background-position: center, right center !important;
        box-shadow: 0 8px 32px rgba(6, 48, 36, .28), inset 0 1px 0 rgba(255, 255, 255, .08);}}
 .hero .title {{font-size: 2.7rem; font-weight: 800; margin: 0; line-height: 1.1;
-              letter-spacing: -0.02em;
-              background: linear-gradient(90deg, #ffffff 0%, #bbf7d0 55%, #99f6e4 100%);
-              -webkit-background-clip: text; background-clip: text; color: transparent;}}
+              letter-spacing: -0.02em; color: #ffffff;}}
+.hero .title span {{background: linear-gradient(90deg, #ffffff 0%, #bbf7d0 55%, #99f6e4 100%);
+                    -webkit-background-clip: text; background-clip: text; color: transparent;}}
 .hero .sub {{color: #ecfdf5; font-size: 1.08rem; margin: .6rem 0 0; max-width: 860px;
             line-height: 1.55;}}
 .pill {{display: inline-block; background: rgba(255, 255, 255, 0.14);
@@ -443,7 +443,7 @@ months = sorted(data.ay.unique())
 
 # ------------------------------------------------------------------ sidebar
 with st.sidebar:
-    st.markdown('<div class="brand">🌍 EcoProve AI</div>'
+    st.markdown('<div class="brand">🌍 <span>EcoProve AI</span></div>'
                 '<div class="brand-sub">Trust Layer for Climate Data · Ankara, Türkiye</div>',
                 unsafe_allow_html=True)
     month = st.selectbox("Month", months,
@@ -473,7 +473,7 @@ mn = numeric(m, ["score", "tmean"])
 # --------------------------------------------------------------------- hero
 st.markdown("""
 <div class="hero">
-  <div class="title">🌍 EcoProve AI</div>
+  <div class="title">🌍 <span>EcoProve AI</span></div>
   <div class="sub">How much can you trust a climate number? We compare three data sources,
   give every daily value a Reliability Score, and seal the result on the blockchain so
   anyone can check it was never changed.</div>
