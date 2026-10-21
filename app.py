@@ -30,7 +30,8 @@ CITY_LABELS = ["TEST", "Ankara"]  # TEST = trial roots, Ankara = final roots
 EMERALD, CYAN, CORAL = "#10b981", "#06b6d4", "#f43f5e"
 AMBER, CRIMSON, SLATE = "#f59e0b", "#ef4444", "#94a3b8"
 SOURCE_COLORS = [EMERALD, CYAN, CORAL, AMBER, "#a78bfa"]
-STATUS_COLORS = {"OK": EMERALD, "Review": AMBER, "Quarantine": CRIMSON, "No_Reference": SLATE}
+STATUS_COLORS = {"Trusted": EMERALD, "OK": EMERALD, "Review": AMBER,
+                 "Quarantine": CRIMSON, "No_Reference": SLATE}
 
 # Plain-language explanations (used in tooltips)
 TIP = {
@@ -183,7 +184,7 @@ def threshold_eval(df, var, op, thr):
     d = d[d[var].notna()].copy()
     d["crossed"] = d[var] < thr if op == "<" else d[var] >= thr
     days = d.groupby("date").agg(n=("crossed", "size"), yes=("crossed", "sum"),
-                                 flagged=("status", lambda s: bool((s != "OK").any())))
+                                 flagged=("status", lambda s: bool((~s.isin(["OK", "Trusted"])).any())))
     days["disagree"] = (days.n >= 2) & (days.yes > 0) & (days.yes < days.n)
     return d, days
 
@@ -423,7 +424,7 @@ def show_table(df):
         st.dataframe(df, use_container_width=True, hide_index=True)
 
 
-STATUS_LEGEND = (f'<div class="legend"><span><i style="background:{EMERALD}"></i>OK — safe to use'
+STATUS_LEGEND = (f'<div class="legend"><span><i style="background:{EMERALD}"></i>Trusted / OK — safe to use'
                  f'</span><span><i style="background:{AMBER}"></i>Review — check first</span>'
                  f'<span><i style="background:{CRIMSON}"></i>Quarantine — flagged, do not use'
                  f'</span></div>')
@@ -511,12 +512,13 @@ tab1, tab2, tab_thr, tab_trust, tab3, tab_reg, tab4 = st.tabs([
 # ---------------------------------------------------------------- Overview
 with tab1:
     counts = m.status.value_counts()
+    ok_cnt = int(counts.get("Trusted", 0)) + int(counts.get("OK", 0))
     c1, c2, c3, c4, c5 = st.columns(5)
     card(c1, "Records", len(m), note=f"{m.source.nunique()} sources · {month}",
          help_text=TIP["records"], accent=CYAN)
     card(c2, "Avg Score", f"{mn.score.mean():.1f}", EMERALD, "out of 100",
          help_text=TIP["score"], accent=EMERALD)
-    card(c3, "OK", int(counts.get("OK", 0)), EMERALD, "safe to use",
+    card(c3, "Trusted / OK", ok_cnt, EMERALD, "safe to use",
          help_text=TIP["ok"], accent=EMERALD)
     card(c4, "Review", int(counts.get("Review", 0)), AMBER, "needs a check",
          help_text=TIP["review"], accent=AMBER)
@@ -541,7 +543,7 @@ with tab1:
         sdf = pd.DataFrame({"Status": counts.index, "Records": counts.values})
         bars = px.bar(sdf, x="Status", y="Records", color="Status",
                       color_discrete_map=STATUS_COLORS,
-                      category_orders={"Status": ["OK", "Review", "Quarantine", "No_Reference"]})
+                      category_orders={"Status": ["Trusted", "OK", "Review", "Quarantine", "No_Reference"]})
         bars.update_layout(showlegend=False, bargap=0.35)
         bars.update_traces(marker_line_width=0)
         show_fig(style_fig(bars, 290))
@@ -855,7 +857,7 @@ with tab_trust:
     dn = numeric(data, ["score"])
     trust = dn.groupby("source").agg(
         records=("score", "size"), avg=("score", "mean"),
-        ok=("status", lambda s: (s == "OK").mean() * 100),
+        ok=("status", lambda s: s.isin(["OK", "Trusted"]).mean() * 100),
         review=("status", lambda s: (s == "Review").mean() * 100),
         quar=("status", lambda s: (s == "Quarantine").mean() * 100),
     ).reset_index().sort_values("avg", ascending=False).reset_index(drop=True)
@@ -865,7 +867,7 @@ with tab_trust:
     for i, r in trust.iterrows():
         card(cols[i], f"{medals[min(i, 4)]} {r.source}", f"{r.avg:.1f}",
              SOURCE_COLORS[i % len(SOURCE_COLORS)],
-             f"avg score · {r.ok:.0f}% OK · {r.quar:.0f}% Quarantine",
+             f"avg score · {r.ok:.0f}% Trusted/OK · {r.review:.0f}% Review",
              accent=SOURCE_COLORS[i % len(SOURCE_COLORS)],
              help_text="Average Reliability Score of this source over the whole period, "
                        "and the share of its records in each status.")
@@ -875,7 +877,7 @@ with tab_trust:
         st.markdown("### Status Share per Source")
         share = px.histogram(data, y="source", color="status", barnorm="percent",
                              color_discrete_map=STATUS_COLORS, orientation="h",
-                             category_orders={"status": ["OK", "Review", "Quarantine",
+                             category_orders={"status": ["Trusted", "OK", "Review", "Quarantine",
                                                          "No_Reference"]},
                              labels={"source": "", "status": "Status"})
         share.update_layout(xaxis_title="% of records", bargap=0.35)
