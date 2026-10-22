@@ -1,0 +1,6 @@
+senaryo,kaynak,tmean,expected_low,expected_high,z_eff,score,status
+1) Normal gün,NOAA_GHCN,33.3,28.01,33.5,0.0,100,Trusted
+2) NOAA sensörü 45.8 C gönderiyor,NOAA_GHCN,45.8,28.01,33.5,24.06,0,Quarantined
+3) Gerçek ekstrem (3 kaynak da +7 C),NASA_POWER,37.47,28.01,33.5,2.54,88,Trusted
+3) Gerçek ekstrem (3 kaynak da +7 C),NOAA_GHCN,40.3,28.01,33.5,2.19,91,Trusted
+3) Gerçek ekstrem (3 kaynak da +7 C),OPEN_METEO_ERA5,40.0,28.01,33.5,3.43,80,Review

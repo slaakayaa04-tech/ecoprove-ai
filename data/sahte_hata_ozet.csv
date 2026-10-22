@@ -1,0 +1,7 @@
+tur,n_gun,yakalama_review_veya_karantina,karantina
+sicrama,8,1.0,1.0
+birim_hatasi,6,1.0,1.0
+takili_sensor,16,0.812,0.75
+drift,45,0.689,0.444
+GENEL_F1,75,0.817,
+BASELINE_F1,75,0.148,

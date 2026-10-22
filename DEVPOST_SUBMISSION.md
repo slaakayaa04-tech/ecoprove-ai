@@ -33,19 +33,19 @@ EcoProve AI does **not** claim to declare physical "truth." Instead, it builds a
 
 EcoProve AI improves the **decision quality and auditability** of climate adaptation and clean-energy workflows rather than claiming direct physical carbon removal.
 
-### Quantitative Findings on Ankara Multi-Source Data (` ERA5 `, ` NASA POWER `, ` NOAA GHCN-Daily `)
-- **Dataset Coverage:** `1,095` daily records across 3 sources for Ankara (`365` days × `3` sources; *[TODO: update if multi-year CSV is added]*).
-- **Reliability Distribution:**
-  - **Average Reliability Score:** `93.0 / 100`
-  - **Trusted / OK Records:** `1,057` (`96.5%`) — high inter-source agreement and normal temporal behavior.
-  - **Review / Flagged Records:** `38` (`3.5%`) — significant inter-source divergence or abnormal jump requiring human check before use.
+### Quantitative Findings on Ankara Multi-Source Data (`ERA5`, `NASA POWER`, `NOAA GHCN-Daily`)
+- **Dataset Coverage (2020–2026):** `2020–2022` serves as the leak-free training/reference period; **`4,017` scored daily records across `44` months (`2023-01` to `2026-08`)** are evaluated via walk-forward expansion and sealed into `44` monthly Merkle roots.
+- **Reliability Distribution (2023–2026, 4,017 records):**
+  - **Trusted Records (`84–100`):** `3,866` (`96.2%`) — sources agree and stay within the LightGBM 90% expected interval.
+  - **Review Records (`50–83`):** `126` (`3.1%`) — noticeable inter-source divergence requiring verification before decision use.
+  - **Quarantined Records (`0–49`):** `1` natural anomaly + synthetic fault test cases — archived with reason rather than silently deleted.
+  - **Missing Station Days (`Missing`):** `24` records (`0.6%`) in `2024–2026` (plus `19` historical days in `2020–2022`), including **7 consecutive silent days at the NOAA Ankara station in late March / early April 2026**—kept explicitly in the calendar so station outages are never hidden.
 - **Freezing Threshold Scenario ($T_{\text{mean}} < 0\,^\circ\text{C}$):**
-  - Out of `365` days in 2023, at least one source reported sub-zero daily mean temperature on **`38` days**.
-  - On **`13` of those days (`3.6%` of the year)**, the three sources **disagreed** on whether the freezing threshold was crossed (one source said *Yes*, another said *No*).
-  - Our interactive **🎯 Threshold Check** tab makes these `13` disagreement days immediately visible so insurers, farmers, and energy planners can inspect the exact source scores before making a payout or modeling decision.
-- **Fault Injection & Forecasting Validation:**
-  - Synthetic fault injection tests (`sahte_hata_sonuc.csv`): *[TODO: insert friend's exact catch rate %, e.g., XX% of injected anomalies flagged]*.
-  - Temperature forecasting backtest: *[TODO: insert friend's training years and MAE / RMSE metrics]*.
+  - In 2023 alone, at least one source reported sub-zero daily mean temperature on **`38` days**, and on **`13` of those days (`3.6%` of the year)** the three sources **disagreed** on whether the freezing threshold was crossed (one source said *Yes*, another said *No*).
+  - Our interactive **🎯 Threshold Check** tab makes these disagreement days immediately visible so insurers, farmers, and energy planners can inspect the exact source scores before making a payout or modeling decision.
+- **Fault Injection & Walk-Forward Forecasting Validation:**
+  - **Synthetic Fault Injection Benchmark (`sahte_hata_ozet.csv` & `esik_duyarlilik.csv`):** Tested on `75` injected fault days (`±15 °C` sudden spikes, `°C/°F` unit errors, `5-day` stuck sensors, and `20-day` gradual sensor drift) plus `+7 °C` multi-source real heatwaves. EcoProve achieved **100% detection on spikes and unit errors**, **81.2% on stuck sensors**, **68.9% on gradual drift**, and an overall **F1 score of `0.817 – 0.865`** compared to **`0.148` F1** for a single-series Heston-style threshold baseline ($z > 2.5$)—while preserving **98.6%+ of real multi-source heatwaves** without false quarantine.
+  - **Walk-Forward LightGBM Interval Forecast (`tahmin_yillik_ozet_2026.csv`):** Trained strictly on past years (`2024` on `2020–2023`, `2025` on `2020–2024`, `2026` on `2020–2025`), LightGBM achieved **`1.39 °C` MAE in 2026** (beating both Persistence `1.56 °C` and Climatology `2.58 °C`) with **`82.3%–87.7%` empirical coverage** on its 90% expected temperature band.
 
 ---
 

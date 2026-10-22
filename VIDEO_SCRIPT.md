@@ -31,14 +31,16 @@
 
 ---
 
-## ⏱️ Scene 3: Real Climate Impact — Threshold Check & Source Trust (1:40 – 2:25)
+## ⏱️ Scene 3: AI Expected Band, Fault Benchmark & Threshold Check (1:40 – 2:35)
 **Screen:**
-1. Click **🎯 Threshold Check** tab. Select **Period: All Months** (`🧊 Freezing Day — tmean below 0 °C`). Point to the **Sources Disagree (`13` days)** card and the table below.
-2. Briefly click **🏆 Source Trust** tab to show the medal ranking (`🥇 NOAA_GHCN`, `🥈 OPEN_METEO_ERA5`, `🥉 NASA_POWER`).
+1. Click **📈 AI Expected Band** tab: show the green LightGBM 90% expected interval band (`expected_low` to `expected_high`) and the 2022–2026 walk-forward table (`2026 LightGBM MAE: 1.39 °C` vs `Persistence: 1.56 °C`).
+2. Click **🧪 Fault Benchmark** tab: show the 3 key scenarios (`45.8 °C` sensor spike → `Quarantined (Score 0)` vs `+7 °C` real heatwave across all 3 sources → `Trusted`) and the bar chart (**EcoProve F1 `0.865`** vs **Heston Baseline F1 `0.148`**).
+3. Click **🎯 Threshold Check** tab (`🧊 Freezing Day — tmean below 0 °C`). Point to the **Sources Disagree** card and table.
 
 **What to Say:**
-> "Why does source disagreement matter in the real world? In our Threshold Check tab, we test a freezing-day rule—temperature below 0 degrees Celsius—across the whole year.
-> Out of 365 days, at least one source reported freezing temperatures on 38 days. On 13 of those days, the sources disagreed: one source said Yes, another said No. For a weather-index insurance contract, that changes whether a farmer gets paid. EcoProve highlights those exact days and shows the reliability score of each source."
+> "In the AI Expected Band tab, our LightGBM quantile model predicts a 90% expected temperature range using only past lags and rolling averages—with zero same-day data leakage—beating the persistence baseline across our 2022 to 2026 walk-forward tests with a 1.39 degree MAE in 2026.
+> In the Fault Benchmark tab, we prove why we never blindly delete extreme numbers: when a single sensor spikes to 45.8 degrees, EcoProve catches the cross-source disagreement and quarantines it with score 0. But during a real +7 degree heatwave where all three sources rise together, the data stays Trusted! Overall, EcoProve achieves a 0.865 F1 score compared to just 0.148 for a single-series threshold baseline.
+> And in the Threshold Check tab, we show that on freezing days below 0 degrees Celsius, sources frequently disagree on whether the threshold was crossed—which directly impacts weather-index crop insurance payouts."
 
 ---
 

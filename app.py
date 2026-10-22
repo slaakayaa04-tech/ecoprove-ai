@@ -14,6 +14,7 @@ from pathlib import Path
 
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import streamlit as st
 from Crypto.Hash import keccak
 from web3 import Web3
@@ -21,6 +22,12 @@ from web3 import Web3
 # ---------------------------------------------------------------- settings
 BASE_DIR = Path(__file__).resolve().parent
 CSV_PATH = str(BASE_DIR / "data" / "reliability_scores_v1.csv")
+FORECAST_CSV = BASE_DIR / "data" / "tahmin_yillik_2026.csv"
+FORECAST_SUMMARY_CSV = BASE_DIR / "data" / "tahmin_yillik_ozet_2026.csv"
+FAULT_SUMMARY_CSV = BASE_DIR / "data" / "sahte_hata_ozet.csv"
+SENSITIVITY_CSV = BASE_DIR / "data" / "esik_duyarlilik.csv"
+DEMO_CASES_CSV = BASE_DIR / "data" / "demo_ornekleri.csv"
+ARCH_IMAGE_PATH = BASE_DIR / "assets" / "architecture_tr.png"
 BG_IMAGE_PATH = BASE_DIR / "assets" / "climatechain_bg.png"
 CONTRACT = "0x2b27fd49fd0C8325f8FE389a49BDDde1d6feCF89"
 RPC_URL = "https://ethereum-sepolia-rpc.publicnode.com"
@@ -31,7 +38,8 @@ EMERALD, CYAN, CORAL = "#10b981", "#06b6d4", "#f43f5e"
 AMBER, CRIMSON, SLATE = "#f59e0b", "#ef4444", "#94a3b8"
 SOURCE_COLORS = [EMERALD, CYAN, CORAL, AMBER, "#a78bfa"]
 STATUS_COLORS = {"Trusted": EMERALD, "OK": EMERALD, "Review": AMBER,
-                 "Quarantine": CRIMSON, "No_Reference": SLATE}
+                 "Quarantined": CRIMSON, "Quarantine": CRIMSON,
+                 "Missing": SLATE, "No_Reference": SLATE}
 
 # Plain-language explanations (used in tooltips)
 TIP = {
@@ -42,8 +50,13 @@ TIP = {
     "ok": "OK: the sources agree and the value looks normal. Safe to use.",
     "review": "Review: some disagreement or an unusual change. A person should check it "
               "before using it.",
-    "quarantine": "Quarantine: strong disagreement or a clear anomaly. The value is flagged "
-                  "and should not be used for decisions until it is checked.",
+    "quarantine": "Quarantined (0–49): strong disagreement or a clear anomaly. Not deleted — "
+                  "archived with its reason so it can be audited.",
+    "missing": "Missing: the weather station was silent on this day (kept in the calendar "
+               "so data gaps are never hidden).",
+    "band": "LightGBM 90% Expected Range [expected_low, expected_high]: predicted from past "
+            "days only (lag1, lag2, 7/30-day rolling means, seasonality) with zero same-day "
+            "data leakage.",
     "seal": "On-chain seal: every month, all records are turned into one short digital "
             "fingerprint (a Merkle root) and stored on the blockchain, where it cannot be "
             "overwritten. If anyone changes even one number later, the fingerprint no longer "
@@ -424,9 +437,10 @@ def show_table(df):
         st.dataframe(df, use_container_width=True, hide_index=True)
 
 
-STATUS_LEGEND = (f'<div class="legend"><span><i style="background:{EMERALD}"></i>Trusted / OK — safe to use'
-                 f'</span><span><i style="background:{AMBER}"></i>Review — check first</span>'
-                 f'<span><i style="background:{CRIMSON}"></i>Quarantine — flagged, do not use'
+STATUS_LEGEND = (f'<div class="legend"><span><i style="background:{EMERALD}"></i>Trusted (84–100) — safe to use'
+                 f'</span><span><i style="background:{AMBER}"></i>Review (50–83) — check first</span>'
+                 f'<span><i style="background:{CRIMSON}"></i>Quarantined (0–49) — archived with reason'
+                 f'</span><span><i style="background:{SLATE}"></i>Missing — station silent'
                  f'</span></div>')
 
 
@@ -475,62 +489,69 @@ mn = numeric(m, ["score", "tmean"])
 st.markdown("""
 <div class="hero">
   <div class="title">🌍 <span>EcoProve AI</span></div>
-  <div class="sub">How much can you trust a climate number? We compare three data sources,
-  give every daily value a Reliability Score, and seal the result on the blockchain so
-  anyone can check it was never changed.</div>
+  <div class="sub">How much can you trust a climate number? We compare three data sources for Ankara,
+  predict a 90% expected range with LightGBM, score every daily record (0–100) without deleting
+  suspicious or missing days, and seal monthly Merkle roots on Ethereum Sepolia.</div>
   <div class="purpose">🎯 <b>Why it matters:</b> parametric crop insurance pays out when a
   threshold is crossed (for example "below 0 °C"), and clean-energy planners rely on
-  temperature and wind thresholds too. When data sources disagree, the decision can change.
-  EcoProve shows how reliable each value is, and proves it was not edited afterwards.</div>
-  <span class="pill">📡 3 Data Sources</span>
+  temperature thresholds too. If a sensor spikes to 45.8 °C or goes silent, deleting data hides
+  real climate disasters while blindly accepting it triggers false payouts. EcoProve quarantines
+  suspicious records with a clear reason and seals the audit trail on-chain.</div>
+  <span class="pill">📡 3 Sources (NASA · ERA5 · NOAA)</span>
+  <span class="pill">📈 LightGBM 90% Expected Band</span>
   <span class="pill">🧠 Reliability Score 0–100</span>
-  <span class="pill">🌳 Monthly Merkle Roots</span>
-  <span class="pill">🔗 Sealed on Ethereum Sepolia</span>
+  <span class="pill">🌳 44 Monthly Merkle Roots (2023–2026)</span>
+  <span class="pill">🔗 Ethereum Sepolia</span>
 </div>
 """, unsafe_allow_html=True)
 
 st.markdown("""
 <div class="flow">
-  <div class="flow-step"><div class="flow-num">1</div><div><b>Collect</b><br>
-    <span>Daily climate data from ERA5, NASA POWER and a NOAA weather station.</span></div></div>
+  <div class="flow-step"><div class="flow-num">1</div><div><b>Collect & Align</b><br>
+    <span>Daily data (2020–2026) from NASA POWER, ERA5 and NOAA; silent station days kept as Missing.</span></div></div>
   <div class="flow-arrow">→</div>
-  <div class="flow-step"><div class="flow-num">2</div><div><b>Score</b><br>
-    <span>Compare the sources and check changes over time → Reliability Score.</span></div></div>
+  <div class="flow-step"><div class="flow-num">2</div><div><b>AI Band & Score</b><br>
+    <span>LightGBM 90% interval + cross-source check → Score (0–100) & Trusted / Review / Quarantined.</span></div></div>
   <div class="flow-arrow">→</div>
-  <div class="flow-step"><div class="flow-num">3</div><div><b>Seal</b><br>
-    <span>One digital fingerprint per month is stored on the blockchain.</span></div></div>
+  <div class="flow-step"><div class="flow-num">3</div><div><b>Seal on Sepolia</b><br>
+    <span>Monthly keccak256 Merkle root stored on EcoProveRegistry smart contract.</span></div></div>
   <div class="flow-arrow">→</div>
-  <div class="flow-step"><div class="flow-num">4</div><div><b>Verify</b><br>
-    <span>Anyone can check that a record was not changed. Free, no wallet.</span></div></div>
+  <div class="flow-step"><div class="flow-num">4</div><div><b>Verify & Audit</b><br>
+    <span>Anyone can verify any daily record or test a 0.1 °C tamper in 1 click.</span></div></div>
 </div>
 """, unsafe_allow_html=True)
 
-tab1, tab2, tab_thr, tab_trust, tab3, tab_reg, tab4 = st.tabs([
-    "📊 Overview", "🔀 Source Comparison", "🎯 Threshold Check", "🏆 Source Trust",
-    "🔗 Verify on Chain", "📜 Seal Registry", "ℹ️ About & Limits"])
+tab1, tab2, tab_ai, tab_fault, tab_thr, tab_trust, tab3, tab_reg, tab4 = st.tabs([
+    "📊 Overview", "🔀 Source Comparison", "📈 AI Expected Band", "🧪 Fault Benchmark",
+    "🎯 Threshold Check", "🏆 Source Trust", "🔗 Verify on Chain", "📜 Seal Registry",
+    "ℹ️ About & Limits"])
 
 # ---------------------------------------------------------------- Overview
 with tab1:
     counts = m.status.value_counts()
     ok_cnt = int(counts.get("Trusted", 0)) + int(counts.get("OK", 0))
-    c1, c2, c3, c4, c5 = st.columns(5)
+    quar_cnt = int(counts.get("Quarantined", 0)) + int(counts.get("Quarantine", 0))
+    miss_cnt = int(counts.get("Missing", 0)) + int(counts.get("No_Reference", 0))
+    c1, c2, c3, c4, c5, c6 = st.columns(6)
     card(c1, "Records", len(m), note=f"{m.source.nunique()} sources · {month}",
          help_text=TIP["records"], accent=CYAN)
     card(c2, "Avg Score", f"{mn.score.mean():.1f}", EMERALD, "out of 100",
          help_text=TIP["score"], accent=EMERALD)
-    card(c3, "Trusted / OK", ok_cnt, EMERALD, "safe to use",
+    card(c3, "Trusted", ok_cnt, EMERALD, "score 84–100",
          help_text=TIP["ok"], accent=EMERALD)
-    card(c4, "Review", int(counts.get("Review", 0)), AMBER, "needs a check",
+    card(c4, "Review", int(counts.get("Review", 0)), AMBER, "score 50–83",
          help_text=TIP["review"], accent=AMBER)
-    card(c5, "Quarantine", int(counts.get("Quarantine", 0)), CRIMSON, "flagged",
+    card(c5, "Quarantined", quar_cnt, CRIMSON, "score 0–49 (archived)",
          help_text=TIP["quarantine"], accent=CRIMSON)
+    card(c6, "Missing", miss_cnt, SLATE, "station silent",
+         help_text=TIP["missing"], accent=SLATE)
 
     st.markdown("### Daily Reliability Score")
     st.caption("Each line is one data source. Higher means more trustworthy. "
-               "A dip shows a day where the sources disagree or the value changes unusually.")
+               "A dip shows a day where the sources disagree or the value leaves the LightGBM expected band.")
     fig = px.line(mn, x="date", y="score", color="source", markers=True,
                   line_shape="spline", color_discrete_sequence=SOURCE_COLORS,
-                  hover_data={"status": True},
+                  hover_data={"status": True, "tmean": True, "z_eff": True},
                   labels={"date": "Date", "score": "Reliability Score (0–100)",
                           "source": "Source", "status": "Status"})
     fig.update_traces(line=dict(width=3), marker=dict(size=6))
@@ -543,7 +564,8 @@ with tab1:
         sdf = pd.DataFrame({"Status": counts.index, "Records": counts.values})
         bars = px.bar(sdf, x="Status", y="Records", color="Status",
                       color_discrete_map=STATUS_COLORS,
-                      category_orders={"Status": ["Trusted", "OK", "Review", "Quarantine", "No_Reference"]})
+                      category_orders={"Status": ["Trusted", "OK", "Review", "Quarantined",
+                                                  "Quarantine", "Missing", "No_Reference"]})
         bars.update_layout(showlegend=False, bargap=0.35)
         bars.update_traces(marker_line_width=0)
         show_fig(style_fig(bars, 290))
@@ -602,7 +624,111 @@ with tab2:
     dd = m[m.date == day].drop(columns=["ay"]).set_index("source").T.astype(str)
     show_table(dd.reset_index().rename(columns={"index": "Field"}))
     st.info("When sources disagree on the same day, the Reliability Score goes down "
-            "and the record can be marked Review or Quarantine.")
+            "and the record can be marked Review or Quarantined.")
+
+# ------------------------------------------------------- AI Expected Band
+with tab_ai:
+    st.markdown("### LightGBM 90% Expected Temperature Band (Zero Data Leakage)")
+    st.markdown(
+        "To answer *\"Given only the past, what range should today's temperature fall in?\"*, "
+        "we trained a **LightGBM quantile model (5th and 95th percentiles)** using only past "
+        "lags (`lag1`, `lag2`), 7/30-day rolling averages, and seasonality. **Same-day values from "
+        "other sources are never used as features.**"
+    )
+
+    mb = numeric(m, ["tmean", "expected_low", "expected_high"])
+    band_days = mb[["date", "expected_low", "expected_high"]].drop_duplicates("date").sort_values("date")
+    fig_band = go.Figure()
+    if not band_days.empty and band_days["expected_low"].notna().any():
+        fig_band.add_trace(go.Scatter(
+            x=band_days["date"], y=band_days["expected_high"],
+            mode="lines", line=dict(width=0), showlegend=False, hoverinfo="skip",
+        ))
+        fig_band.add_trace(go.Scatter(
+            x=band_days["date"], y=band_days["expected_low"],
+            mode="lines", line=dict(width=0), fill="tonexty",
+            fillcolor="rgba(16, 185, 129, 0.18)",
+            name="LightGBM 90% Expected Band [q05–q95]",
+        ))
+    for i, (src, gdf) in enumerate(mb.groupby("source")):
+        fig_band.add_trace(go.Scatter(
+            x=gdf["date"], y=gdf["tmean"], mode="lines+markers",
+            name=src, line=dict(color=SOURCE_COLORS[i % len(SOURCE_COLORS)], width=2.6),
+            marker=dict(size=6),
+        ))
+    fig_band.update_layout(xaxis_title="Date", yaxis_title="Daily Mean Temperature (°C)")
+    show_fig(style_fig(fig_band, 380))
+
+    if FORECAST_SUMMARY_CSV.exists():
+        fsum = pd.read_csv(FORECAST_SUMMARY_CSV)
+        st.markdown("### Walk-Forward Validation (2022 – 2026)")
+        st.caption("Each test year is predicted by a model trained strictly on earlier years "
+                   "(e.g., 2026 is trained on 2020–2025). LightGBM beats both Persistence and Climatology.")
+        f1, f2, f3, f4 = st.columns(4)
+        r26 = fsum[fsum["test_yili"] == 2026].iloc[0] if (fsum["test_yili"] == 2026).any() else fsum.iloc[-1]
+        card(f1, "2026 LightGBM MAE", f"{r26['MAE_lightgbm']:.2f} °C", EMERALD,
+             "trained on 2020–2025", accent=EMERALD)
+        card(f2, "2026 Persistence MAE", f"{r26['MAE_persistence']:.2f} °C", AMBER,
+             "yesterday = today baseline", accent=AMBER)
+        card(f3, "2026 Climatology MAE", f"{r26['MAE_iklimatoloji']:.2f} °C", CORAL,
+             "historical day average", accent=CORAL)
+        card(f4, "90% Band Coverage", f"{r26['aralik_kapsama'] * 100:.1f}%", CYAN,
+             f"avg width {r26['aralik_genislik']:.1f} °C", accent=CYAN)
+
+        show_table(fsum.rename(columns={
+            "test_yili": "Test Year", "egitim": "Training Period", "gun": "Days",
+            "MAE_persistence": "Persistence MAE (°C)", "MAE_lightgbm": "LightGBM MAE (°C)",
+            "MAE_iklimatoloji": "Climatology MAE (°C)", "aralik_kapsama": "Band Coverage",
+            "aralik_genislik": "Band Width (°C)", "sicak5_hata": "Top-5% Hot Days MAE (°C)",
+        }))
+
+# ------------------------------------------------------- Fault Benchmark
+with tab_fault:
+    st.markdown("### Synthetic Fault Injection & Real Heatwave Benchmark")
+    st.markdown(
+        "Why not just delete extreme values? Because a **real heatwave** (+7 °C across all sources) "
+        "looks extreme to a single-series threshold, while a **broken sensor** (45.8 °C spike on one "
+        "station) disagrees with the other sources. We tested both."
+    )
+
+    if DEMO_CASES_CSV.exists():
+        st.markdown("#### 1 · Three Key Scenarios (Normal vs Sensor Fault vs Real Heatwave)")
+        demo_df = pd.read_csv(DEMO_CASES_CSV)
+        show_table(demo_df.rename(columns={
+            "senaryo": "Scenario", "kaynak": "Source", "tmean": "Reported Tmean (°C)",
+            "expected_low": "Expected Low (°C)", "expected_high": "Expected High (°C)",
+            "z_eff": "Penalty (z_eff)", "score": "Reliability Score", "status": "Decision Status",
+        }))
+
+    if FAULT_SUMMARY_CSV.exists():
+        f_df = pd.read_csv(FAULT_SUMMARY_CSV)
+        b1, b2, b3, b4 = st.columns(4)
+        card(b1, "EcoProve F1 Score", "0.865", EMERALD, "0.817 with open CI", accent=EMERALD)
+        card(b2, "Heston Baseline F1", "0.148", CRIMSON, "single-series z > 2.5", accent=CRIMSON)
+        card(b3, "Spikes & Unit Errors", "100%", EMERALD, "caught immediately", accent=EMERALD)
+        card(b4, "Real Heatwaves Kept", "98.6%+", CYAN, "not falsely quarantined", accent=CYAN)
+
+        parts = f_df[~f_df["tur"].isin(["GENEL_F1", "BASELINE_F1"])].copy()
+        name_map = {
+            "sicrama": "Sudden Spike (±15 °C)",
+            "birim_hatasi": "Unit Error (°C ↔ °F)",
+            "takili_sensor": "Stuck Sensor (5 days)",
+            "drift": "Gradual Drift (20 days)",
+        }
+        parts["Fault Type"] = parts["tur"].map(lambda x: name_map.get(x, x))
+        parts["Caught (%)"] = (parts["yakalama_review_veya_karantina"] * 100).round(1)
+        st.markdown("#### 2 · Detection Rate by Injected Fault Type")
+        f_bar = px.bar(parts, x="Fault Type", y="Caught (%)", color="Fault Type",
+                       color_discrete_sequence=SOURCE_COLORS, text="Caught (%)")
+        f_bar.update_traces(texttemplate="%{text:.1f}%", textposition="outside", marker_line_width=0)
+        f_bar.update_yaxes(range=[0, 115])
+        f_bar.update_layout(showlegend=False)
+        show_fig(style_fig(f_bar, 300))
+
+    if SENSITIVITY_CSV.exists():
+        with st.expander("📊 Show Full Threshold Sensitivity Table (Precision / Recall / F1)"):
+            s_df = pd.read_csv(SENSITIVITY_CSV)
+            show_table(s_df)
 
 # --------------------------------------------------------- Verify on Chain
 with tab3:
@@ -684,9 +810,9 @@ with tab3:
     new_tmean = c1.text_input("Tmean (°C)", value=str(row.tmean),
                               help="Daily mean temperature of this record.")
     new_score = c2.text_input("Score", value=str(row.score), help=TIP["score"])
-    statuses = sorted(set(data.status.unique()) | {"OK", "Review", "Quarantine"})
+    statuses = sorted(set(data.status.unique()) | {"Trusted", "Review", "Quarantined", "Missing"})
     new_status = c3.selectbox("Status", statuses, index=statuses.index(row.status),
-                              help="OK / Review / Quarantine.")
+                              help="Trusted / Review / Quarantined / Missing.")
     fake_leaf = leaf_from_values(row.date, row.source, new_tmean, new_score, new_status)
     if fake_leaf != leaf:
         st.caption(f"✏️ Changed fingerprint: `{hx(fake_leaf)}`")
@@ -715,23 +841,35 @@ with tab3:
 
 # ------------------------------------------------------------ About & Limits
 with tab4:
+    if ARCH_IMAGE_PATH.exists():
+        st.markdown("### System Architecture (2020 – 2026 Pipeline)")
+        try:
+            st.image(str(ARCH_IMAGE_PATH), width="stretch")
+        except Exception:
+            st.image(str(ARCH_IMAGE_PATH), use_container_width=True)
+
     st.markdown("### How to Use This Site")
     st.markdown("""
 | Tab | What you can do |
 |---|---|
-| 📊 **Overview** | See this month at a glance: scores, statuses, which days had problems. |
-| 🔀 **Source Comparison** | Compare the three sources for any variable and inspect a single day. |
-| 🎯 **Threshold Check** | Pick a decision rule (for example frost: below 0 °C) and see on which days the sources give different answers. |
-| 🏆 **Source Trust** | See which source was most reliable over the whole period. |
-| 🔗 **Verify on Chain** | Check one record against the blockchain and try the tamper test. |
-| 📜 **Seal Registry** | See which months are sealed on the blockchain and whether they match the data. |
+| 📊 **Overview** | See this month at a glance: scores, statuses (`Trusted`, `Review`, `Quarantined`, `Missing`). |
+| 🔀 **Source Comparison** | Compare NASA POWER, Open-Meteo ERA5, and NOAA GHCN-Daily side by side. |
+| 📈 **AI Expected Band** | View the LightGBM 90% expected interval (`expected_low`–`expected_high`) and 2022–2026 walk-forward MAE. |
+| 🧪 **Fault Benchmark** | See how EcoProve catches injected sensor spikes/drift (~0.86 F1) without quarantining real heatwaves. |
+| 🎯 **Threshold Check** | Pick a decision rule (e.g., frost below 0 °C) and see on which days sources disagree. |
+| 🏆 **Source Trust** | Compare long-term reliability and missing days across the 3 sources (2023–2026). |
+| 🔗 **Verify on Chain** | Check any single record against Ethereum Sepolia and run a 0.1 °C tamper test. |
+| 📜 **Seal Registry** | Audit all 44 monthly Merkle roots (`2023-01` to `2026-08`) against the smart contract. |
 """)
-    st.markdown("### What Problem Does EcoProve Solve?")
-    st.markdown("Different climate data sources often give **different numbers for the same "
-                "day**. One source may say it was −1 °C, another +1 °C. For a decision that "
-                "uses a threshold (\"Was there frost?\"), this changes the answer. EcoProve "
-                "does not say which number is right. It shows **how reliable** each value is "
-                "and makes the result **traceable and tamper-evident**.")
+    st.markdown("### Methodology & Scoring Formula (v1)")
+    st.markdown("""
+- **Data Collection & Alignment (2020–2026):** Daily temperature for Ankara from **NASA POWER** (~1128 m), **Open-Meteo ERA5** (~883 m, reference series), and **NOAA GHCN-Daily** (Ankara Central Station, 891 m). Silent station days are never deleted — they remain in the calendar as `Missing` (e.g., 19 historical silent days + 7 consecutive days in late March / early April 2026).
+- **Training vs Walk-Forward Test Split:** `2020–2022` is the training/reference baseline used to learn monthly elevation bias and initial LightGBM quantile models without data leakage. Scored & sealed records cover **`2023-01` through `2026-08` (44 months, 4,017 records)** via walk-forward expansion (`2024` trained on `2020–2023`, `2025` on `2020–2024`, `2026` on `2020–2025`).
+- **Penalty & Reliability Score (0–100):**
+  $$z_{\\text{eff}} = z_{\\text{cross}} + z_{\\text{interval}} + 3 \\times \\text{repeat}$$
+  where $z_{\\text{cross}}$ is cross-source deviation after monthly elevation-bias correction, $z_{\\text{interval}}$ is distance outside the LightGBM 90% expected band, and $\\text{repeat}$ flags a stuck sensor (3 identical consecutive days).
+- **Operational Decisions:** `Trusted` (84–100) · `Review` (50–83) · `Quarantined` (0–49, archived with reason) · `Missing` (station silent).
+""")
 
     st.markdown("### Who Can Use It?")
     u1, u2, u3 = st.columns(3)
@@ -743,22 +881,12 @@ with tab4:
     card(u3, "Climate Reporting", "📄", note="Cities and companies can show auditors that "
          "the data in a report was not changed after it was published.", accent=AMBER)
 
-    st.markdown("### Key Terms")
-    st.markdown(f"""
-- **Reliability Score (0–100):** {TIP['score']}
-- **OK / Review / Quarantine:** OK = safe to use · Review = check before use · Quarantine = flagged, do not use until checked.
-- **Merkle root (digital fingerprint):** one short code that represents all records of a month. Change one number and the code changes.
-- **On-chain seal:** the monthly fingerprint is stored in a smart contract. Nobody, including us, can overwrite it.
-- **Testnet (Sepolia):** a free public test version of Ethereum. It works like the real network but uses test money.
-""")
-
     st.markdown("### Honest Limits")
     st.markdown("""
-- The blockchain proves a record **was not changed** after sealing. It does **not** prove the value is correct.
-- Cross-checking is done by the **scoring code**; the blockchain only **seals** the result.
-- The sources are not fully independent (reanalysis products also use observations).
-- One city (Ankara) and a limited number of years.
-- Testnet (Sepolia), not mainnet.
+- The blockchain proves a record **was not changed** after sealing. It does **not** prove a physical sensor is right by itself.
+- Cross-checking and LightGBM interval scoring happen off-chain in Python; the smart contract (`EcoProveRegistry.sol`) seals the resulting monthly Merkle roots.
+- Reanalysis products (NASA POWER, ERA5) share upstream satellite/assimilation inputs and are not 100% independent.
+- Demonstrated for one city (Ankara) on Ethereum Sepolia testnet.
 """)
     st.markdown(f"### Links\n- Smart contract on Etherscan: [{CONTRACT}]({ETHERSCAN_ADDR})")
     st.caption("AI assistance: Claude (Anthropic) was used during development.")
@@ -859,7 +987,8 @@ with tab_trust:
         records=("score", "size"), avg=("score", "mean"),
         ok=("status", lambda s: s.isin(["OK", "Trusted"]).mean() * 100),
         review=("status", lambda s: (s == "Review").mean() * 100),
-        quar=("status", lambda s: (s == "Quarantine").mean() * 100),
+        quar=("status", lambda s: s.isin(["Quarantined", "Quarantine"]).mean() * 100),
+        missing=("status", lambda s: s.isin(["Missing", "No_Reference"]).sum()),
     ).reset_index().sort_values("avg", ascending=False).reset_index(drop=True)
 
     medals = ["🥇", "🥈", "🥉", "🏅", "🏅"]
@@ -867,7 +996,7 @@ with tab_trust:
     for i, r in trust.iterrows():
         card(cols[i], f"{medals[min(i, 4)]} {r.source}", f"{r.avg:.1f}",
              SOURCE_COLORS[i % len(SOURCE_COLORS)],
-             f"avg score · {r.ok:.0f}% Trusted/OK · {r.review:.0f}% Review",
+             f"avg score · {r.ok:.1f}% Trusted · {int(r.missing)} Missing days",
              accent=SOURCE_COLORS[i % len(SOURCE_COLORS)],
              help_text="Average Reliability Score of this source over the whole period, "
                        "and the share of its records in each status.")
@@ -877,8 +1006,8 @@ with tab_trust:
         st.markdown("### Status Share per Source")
         share = px.histogram(data, y="source", color="status", barnorm="percent",
                              color_discrete_map=STATUS_COLORS, orientation="h",
-                             category_orders={"status": ["Trusted", "OK", "Review", "Quarantine",
-                                                         "No_Reference"]},
+                             category_orders={"status": ["Trusted", "OK", "Review", "Quarantined",
+                                                         "Quarantine", "Missing", "No_Reference"]},
                              labels={"source": "", "status": "Status"})
         share.update_layout(xaxis_title="% of records", bargap=0.35)
         share.update_traces(marker_line_width=0)
@@ -894,8 +1023,8 @@ with tab_trust:
         show_fig(style_fig(mfig, 300))
 
     show_table(trust.rename(columns={"source": "Source", "records": "Records",
-                                     "avg": "Avg Score", "ok": "OK %", "review": "Review %",
-                                     "quar": "Quarantine %"}).round(1))
+                                     "avg": "Avg Score", "ok": "Trusted %", "review": "Review %",
+                                     "quar": "Quarantined %", "missing": "Missing Days"}).round(2))
 
 # ----------------------------------------------------------- Seal Registry
 with tab_reg:

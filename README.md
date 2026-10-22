@@ -61,19 +61,21 @@ Writing every daily climate row directly to a blockchain is expensive and does n
 
 ---
 
-## ✨ Web Application Features (7 Interactive Tabs)
+## ✨ Web Application Features (9 Interactive Tabs)
 
 Open the live dashboard at **[https://ecoprove-ai.streamlit.app](https://ecoprove-ai.streamlit.app)**:
 
 | Tab | What It Does |
 |---|---|
-| 📊 **Overview** | KPI summary cards with plain-language tooltips, daily reliability score curves, status breakdown, Day × Source heatmap, and CSV export. |
-| 🔀 **Source Comparison** | Side-by-side comparison across data sources, daily spread (`max − min`), and a **Day Inspector** table. |
-| 🎯 **Threshold Check** | Evaluates real decision rules (e.g., freezing day `< 0 °C` or custom rules) to show on how many days sources disagree and how many of those days EcoProve flagged as `Review`/`Quarantine`. |
-| 🏆 **Source Trust** | Ranks data sources by average reliability score and status distribution across the full dataset. |
+| 📊 **Overview** | KPI summary cards (`Trusted`, `Review`, `Quarantined`, `Missing`), daily reliability score curves, status breakdown, Day × Source heatmap, and CSV export. |
+| 🔀 **Source Comparison** | Side-by-side comparison across NASA POWER, Open-Meteo ERA5, and NOAA GHCN-Daily, daily spread (`max − min`), and a **Day Inspector** table. |
+| 📈 **AI Expected Band** | LightGBM 90% expected interval (`[expected_low, expected_high]`) with zero data leakage and 2022–2026 walk-forward validation metrics (`1.39 °C` MAE in 2026 vs `1.56 °C` persistence). |
+| 🧪 **Fault Benchmark** | Synthetic fault injection results (`100%` spike & unit error detection, `81.2%` stuck sensor, `68.9%` drift, overall **F1 `0.865`** vs Heston-style baseline `0.148`) and real heatwave preservation. |
+| 🎯 **Threshold Check** | Evaluates real decision rules (e.g., freezing day `< 0 °C` or custom rules) to show on how many days sources disagree and how many of those days EcoProve flagged as `Review`/`Quarantined`. |
+| 🏆 **Source Trust** | Ranks data sources by average reliability score, status distribution, and missing station days across all 44 months (`2023-01` to `2026-08`). |
 | 🔗 **Verify on Chain** | Rebuilds the Merkle leaf and proof locally, calls `verify()` on the Sepolia smart contract, exports standalone JSON proofs, and includes an interactive **Tamper Test**. |
-| 📜 **Seal Registry** | Checks all months in the dataset against the smart contract to confirm which monthly roots are sealed and matching. |
-| ℹ️ **About & Limits** | Beginner-friendly onboarding, use cases, glossary, and honest system boundaries. |
+| 📜 **Seal Registry** | Checks all 44 months in the dataset against the smart contract to confirm which monthly roots are sealed and matching. |
+| ℹ️ **About & Limits** | System architecture diagram (`2020–2026`), scoring formula ($z_{\text{eff}} = z_{\text{cross}} + z_{\text{interval}} + 3 \times \text{repeat}$), use cases, and honest system boundaries. |
 
 ---
 
