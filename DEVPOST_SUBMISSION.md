@@ -94,4 +94,3 @@ Writing every daily weather reading on-chain would waste gas and leak raw data s
 1. **Tamper-Evidence, Not Sensor Calibration:** Blockchain proves a record **was not altered after sealing**; it does not prove a physical thermometer was accurate.
 2. **Off-Chain Scoring vs. On-Chain Sealing:** Cross-validation is performed by the Python scoring pipeline; the blockchain seals the result.
 3. **Source Overlap:** Reanalysis datasets (ERA5, MERRA-2) assimilate surface observations, so sources are not 100% independent.
-4. **AI Assistance Disclosure:** Claude (Anthropic) was used during development for code structuring and documentation.

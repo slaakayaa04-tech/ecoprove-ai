@@ -135,7 +135,6 @@ More details: see [`SECURITY_AND_INTEGRITY.md`](./SECURITY_AND_INTEGRITY.md).
 
 ---
 
-## 👥 Team & Acknowledgments
+## 👥 Team
 
 - **Team:** 2 Computer Engineering students (Blockchain & Web Application · Data Science, Scoring & Forecasting).
-- **AI Assistance Disclosure:** Claude (Anthropic) was used as a coding and documentation assistant during development.

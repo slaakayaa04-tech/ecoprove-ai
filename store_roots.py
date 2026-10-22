@@ -9,7 +9,7 @@ Kullanım (C:\\dev\\ecoprove klasöründe):
 Gerekenler: python -m pip install web3 python-dotenv pandas
 .env dosyasında: PRIVATE_KEY=0x...   (isteğe bağlı: SEPOLIA_RPC_URL=https://...)
 Girdi: merkle_kok.py'nin ürettiği CSV. Kabul edilen sütunlar:
-  ay, root, count   (arkadaşın merkle_kok.py çıktısı, şehir 'Ankara' kabul edilir)
+  ay, root, count   (merkle_kok.py çıktısı, şehir 'Ankara' kabul edilir)
   city, period, root, count
 Dosya adı varsayılan olarak merkle_kokleri.csv; farklıysa --csv merkle_roots.csv
 """
@@ -80,7 +80,7 @@ def main():
         print("UYARI: Bakiye düşük, faucet'ten test ETH alın.")
 
     df = pd.read_csv(args.csv)
-    # Arkadaşın merkle_kok.py çıktısı: sütunlar ay, root, count (şehir sütunu yok)
+    # merkle_kok.py çıktısı: sütunlar ay, root, count (şehir sütunu yok)
     if "period" not in df.columns and "ay" in df.columns:
         df = df.rename(columns={"ay": "period"})
     if "city" not in df.columns:

@@ -1,6 +1,31 @@
 # 🌍 EcoProve AI — Yarışma Teslim Rehberi & Video Metni (Kopyala-Yapıştır)
 
-Bu dosya, yarışma teslim formuna yapıştırılacak **hazır cevapları**, **resmi linkleri** ve **3 dakikalık demo videosu konuşma metnini** içerir.
+Bu dosya, **bu hackathonda hangi temel soruna çözüm ürettiğimizi**, yarışma teslim formuna yapıştırılacak **hazır İngilizce ve Türkçe cevapları**, **resmi linkleri** ve **3 dakikalık demo videosu konuşma metnini** içerir.
+
+---
+
+## 🎯 0. Biz Bu Hackathonda Hangi Soruna Çözüm Ürettik? (Özet Mantık)
+
+**Hackathon Kategorimiz:** *Track 4 — Climate Data & Environmental Monitoring (İklim Verileri ve Çevresel İzleme)*
+
+### 🔴 Çözdüğümüz 3 Katmanlı Temel Sorun:
+İklim değişikliğiyle mücadelede **parametrik tarım sigortaları** ("Sıcaklık 0 °C'nin altına düştüyse çiftçiye don tazminatı öde"), **yenilenebilir enerji (güneş/rüzgâr) üretim planlaması** ve **belediye/kurum iklim raporlamaları** doğrudan günlük hava durumu verilerine dayanır. Ancak gerçek dünyada 3 büyük problem vardır:
+
+1. **Kaynaklar Arası Çelişki (Hangi Veriye Güvenecekler?):**
+   - Uydu/Reanaliz modelleri (**NASA POWER**, **Open-Meteo ERA5**) geniş alanları ızgara (grid) olarak tahmin ederken, yer istasyonları (**NOAA GHCN-Daily**) fiziksel sensörle noktasal ölçüm yapar.
+   - Aynı gün aynı şehir (Ankara) için bir kaynak `-0.5 °C` (don var, sigorta ödemesi yapılmalı) derken diğeri `+0.6 °C` (don yok) diyebilir. Nitekim sadece 2023 yılında Ankara'da sıcaklığın sıfırın altına indiği **38 günün 13'ünde (%34'ünde)** kaynaklar birbiriyle çelişmiştir!
+2. **Bozuk Sensör vs. Gerçek İklim Felaketi İkilemi (Veriyi Silmek Neden Tehlikeli?):**
+   - Yer istasyonundaki bir sensör bozulup aniden `45.8 °C` gönderebilir, 5 gün aynı değerde takılı kalabilir veya bağlantısı kopup günlerce susabilir (NOAA Ankara istasyonunun 2026 Mart–Nisan'da **7 gün üst üste sustuğu** gibi).
+   - Eğer uç değerleri *"kesin sensör hatasıdır"* diye otomatik silersek, **gerçek bir sıcak dalgasını veya iklim felaketini gözden kaçırırız**. Olduğu gibi kabul edersek **sahte alarmlar ve haksız sigorta ödemeleri** oluşur.
+3. **Verinin Sonradan Sessizce Değiştirilebilmesi (Manipülasyon Riski):**
+   - İklim verileri kurumlar arasında sıradan CSV/Excel dosyalarıyla paylaşılır. Bir sigorta ödemesi veya karbon/iklim raporu sonrasında dosyadaki bir sıcaklığın `0.5 °C` değiştirilip değiştirilmediğini kanıtlamanın kriptografik bir yolu yoktur.
+
+### 🟢 EcoProve AI Bu Sorunu Nasıl Çözdü?
+Biz "mutlak doğru sıcaklığı" iddia etmek yerine, ham iklim verisi ile karar vericiler arasına **Yapay Zekâ + Blokzincir tabanlı bağımsız bir Güven ve Kanıt Katmanı (Trust & Verification Layer)** kurduk:
+- **Veriyi Asla Silmez:** Eksik günleri takvimde `Missing` olarak tutar; şüpheli veriyi silmek yerine gerekçesiyle `Quarantined` (Karantina) arşivine alır.
+- **Yapay Zekâ ile Beklenen Aralığı Tahmin Eder (`LightGBM`):** Veri sızıntısı (data leakage) olmadan, sadece geçmiş yıllarla eğitilen Walk-Forward LightGBM modeliyle her gün için **%90 Beklenen Sıcaklık Bandı (`[q05, q95]`)** üretir (`1.33–1.39 °C` MAE).
+- **Çok Kaynaklı Güvenilirlik Skoru (`0–100`) Verir:** Tek bir sensör `45.8 °C` gönderdiğinde diğer kaynaklarla uyuşmadığı için anında yakalayıp karantinaya alır (**Skor 0**, genel hata yakalamada **0.865 F1 skoru**); ama **gerçek bir sıcak dalgasında** üç kaynak birden yükseldiği için veriyi karantinaya atmaz (**%98.6+ koruma**)!
+- **Blokzincire Mühürler (`Ethereum Sepolia Merkle Tree`):** Her günün kaydını tek tek zincire yazıp yüksek gas ücreti ödemek yerine, her ayın tüm kayıtlarını `keccak256` Merkle Ağacı ile **aylık tek bir 32-byte Merkle Köküne (`Root`)** dönüştürüp Sepolia üzerindeki `EcoProveRegistry.sol` akıllı sözleşmesine mühürler (**2020–2026 arası 80 ayın tamamı mühürlü**). İsteyen herkes cüzdan bile bağlamadan tek tıkla bir kaydın sonradan `0.1 °C` bile değiştirilmediğini doğrular!
 
 ---
 

@@ -1036,7 +1036,6 @@ with tab4:
 - Demonstrated for one city (Ankara) on Ethereum Sepolia testnet.
 """)
     st.markdown(f"### Links\n- Smart contract on Etherscan: [{CONTRACT}]({ETHERSCAN_ADDR})")
-    st.caption("AI assistance: Claude (Anthropic) was used during development.")
 
 
 # --------------------------------------------------------- Threshold Check
