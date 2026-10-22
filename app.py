@@ -461,9 +461,10 @@ with st.sidebar:
     st.markdown('<div class="brand">🌍 <span>EcoProve AI</span></div>'
                 '<div class="brand-sub">Trust Layer for Climate Data · Ankara, Türkiye</div>',
                 unsafe_allow_html=True)
-    month = st.selectbox("Month", months,
-                         help="Pick a month. Overview, Source Comparison and Verify on Chain "
-                              "show this month. Source Trust and Seal Registry show all months.")
+    default_m_idx = months.index("2023-01") if "2023-01" in months else 0
+    month = st.sidebar.selectbox("Month", months, index=default_m_idx,
+                         help="Pick any of the 80 months (2020-01 to 2026-08). Overview, Source Comparison and Verify on Chain "
+                              "show this month. Source Trust and Seal Registry show all 80 months.")
     city = st.selectbox("City Label on Chain", CITY_LABELS, help=TIP["city"])
 
     block = latest_block()
@@ -500,7 +501,7 @@ st.markdown("""
   <span class="pill">📡 3 Sources (NASA · ERA5 · NOAA)</span>
   <span class="pill">📈 LightGBM 90% Expected Band</span>
   <span class="pill">🧠 Reliability Score 0–100</span>
-  <span class="pill">🌳 44 Monthly Merkle Roots (2023–2026)</span>
+  <span class="pill">🌳 80 Monthly Merkle Roots (2020–2026)</span>
   <span class="pill">🔗 Ethereum Sepolia</span>
 </div>
 """, unsafe_allow_html=True)

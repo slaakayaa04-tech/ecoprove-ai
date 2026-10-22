@@ -34,12 +34,12 @@ EcoProve AI does **not** claim to declare physical "truth." Instead, it builds a
 EcoProve AI improves the **decision quality and auditability** of climate adaptation and clean-energy workflows rather than claiming direct physical carbon removal.
 
 ### Quantitative Findings on Ankara Multi-Source Data (`ERA5`, `NASA POWER`, `NOAA GHCN-Daily`)
-- **Dataset Coverage (2020–2026):** `2020–2022` serves as the leak-free training/reference period; **`4,017` scored daily records across `44` months (`2023-01` to `2026-08`)** are evaluated via walk-forward expansion and sealed into `44` monthly Merkle roots.
-- **Reliability Distribution (2023–2026, 4,017 records):**
-  - **Trusted Records (`84–100`):** `3,866` (`96.2%`) — sources agree and stay within the LightGBM 90% expected interval.
-  - **Review Records (`50–83`):** `126` (`3.1%`) — noticeable inter-source divergence requiring verification before decision use.
-  - **Quarantined Records (`0–49`):** `1` natural anomaly + synthetic fault test cases — archived with reason rather than silently deleted.
-  - **Missing Station Days (`Missing`):** `24` records (`0.6%`) in `2024–2026` (plus `19` historical days in `2020–2022`), including **7 consecutive silent days at the NOAA Ankara station in late March / early April 2026**—kept explicitly in the calendar so station outages are never hidden.
+- **Dataset Coverage (2020–2026):** **`7,305` scored daily records across `80` months (`2020-01` to `2026-08`)** sealed into `80` monthly Merkle roots (`2020–2022` serves as the leak-free training/reference baseline for elevation bias and initial LightGBM quantile models, followed by `2023–2026` walk-forward expansion).
+- **Reliability Distribution (2020–2026, 7,305 records):**
+  - **Trusted Records (`84–100`):** `7,101` (`97.2%`) — sources agree and stay within the expected interval.
+  - **Review Records (`50–83`):** `175` (`2.4%`) — noticeable inter-source divergence requiring verification before decision use.
+  - **Quarantined Records (`0–49`):** `2` natural anomalies + synthetic fault test cases — archived with reason rather than silently deleted.
+  - **Missing Station Days (`Missing`):** `27` records (`0.4%`) across `2020–2026`, including **7 consecutive silent days at the NOAA Ankara station in late March / early April 2026**—kept explicitly in the calendar so station outages are never hidden.
 - **Freezing Threshold Scenario ($T_{\text{mean}} < 0\,^\circ\text{C}$):**
   - In 2023 alone, at least one source reported sub-zero daily mean temperature on **`38` days**, and on **`13` of those days (`3.6%` of the year)** the three sources **disagreed** on whether the freezing threshold was crossed (one source said *Yes*, another said *No*).
   - Our interactive **🎯 Threshold Check** tab makes these disagreement days immediately visible so insurers, farmers, and energy planners can inspect the exact source scores before making a payout or modeling decision.
