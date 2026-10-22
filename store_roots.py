@@ -99,16 +99,21 @@ def main():
         count = int(r["count"])
         if not re.fullmatch(r"0x[0-9a-fA-F]{64}", root):
             sys.exit(f"Geçersiz kök biçimi: {root}")
-        try:
-            on_root, on_count, _ = c.functions.getRoot(city, period).call()
-            if Web3.to_hex(on_root).lower() == root.lower():
-                print(f"[atla]   {city} {period}: zincirde zaten var (aynı kök)")
-            else:
-                print(f"[UYARI]  {city} {period}: zincirde FARKLI bir kök var, atlandı")
-        except Exception as e:
-            if "not found" in str(e):
-                todo.append((city, period, root, count))
-            else:
+        for attempt in range(1, 9):
+            try:
+                on_root, on_count, _ = c.functions.getRoot(city, period).call()
+                if Web3.to_hex(on_root).lower() == root.lower():
+                    print(f"[atla]   {city} {period}: zincirde zaten var (aynı kök)", flush=True)
+                else:
+                    print(f"[UYARI]  {city} {period}: zincirde FARKLI bir kök var, atlandı", flush=True)
+                break
+            except Exception as e:
+                if "not found" in str(e):
+                    todo.append((city, period, root, count))
+                    break
+                if attempt < 8:
+                    time.sleep(3)
+                    continue
                 raise
 
     print(f"\nYazılacak kayıt sayısı: {len(todo)}")
@@ -142,13 +147,28 @@ def main():
                 break
             except Exception as e:
                 err_s = str(e).lower()
-                if any(k in err_s for k in ["in-flight", "nonce", "underpriced", "replacement", "timeout", "502", "503", "429"]) and attempt < 8:
+                if "already stored" in err_s:
+                    print(f"[atla]   {city} {period}: zaten yazılmış", flush=True)
+                    h = None
+                    break
+                if any(k in err_s for k in ["in-flight", "nonce", "underpriced", "replacement", "timeout", "502", "503", "429", "connection", "aborted", "10054", "known"]) and attempt < 8:
                     print(f"[bekle]  {city} {period}: ağ önceki işlemi tamamlıyor, "
                           f"10 sn sonra tekrar ({attempt}/8)", flush=True)
                     time.sleep(10)
                     continue
                 raise
-        rc = w3.eth.wait_for_transaction_receipt(h, timeout=240)
+        if h is None:
+            continue
+        rc = None
+        for r_att in range(1, 9):
+            try:
+                rc = w3.eth.wait_for_transaction_receipt(h, timeout=240)
+                break
+            except Exception:
+                if r_att < 8:
+                    time.sleep(5)
+                    continue
+                raise
         link = f"https://sepolia.etherscan.io/tx/{Web3.to_hex(h)}"
         if rc.status == 1:
             print(f"[yazıldı] {city} {period}  {link}", flush=True)
