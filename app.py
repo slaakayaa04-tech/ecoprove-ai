@@ -680,8 +680,8 @@ with tab_ai:
              f"avg band width {r_row['aralik_genislik']:.1f} °C", accent=CYAN)
 
         st.markdown(f"#### Actual vs Our LightGBM Forecast — {period_label}")
-        st.caption("Green shaded area = LightGBM 90% expected interval [alt, ust]. "
-                   "White line = Actual Temperature. Emerald line = Our LightGBM AI Forecast.")
+        st.caption("Soft cyan shaded area = LightGBM 90% expected interval [alt, ust]. "
+                   "White line = Actual Temperature. Bright Gold/Orange line = Our LightGBM AI Forecast.")
 
         if not sub_fc.empty:
             fig_fc = go.Figure()
@@ -692,31 +692,31 @@ with tab_ai:
             fig_fc.add_trace(go.Scatter(
                 x=sub_fc["date"], y=sub_fc["alt"],
                 mode="lines", line=dict(width=0), fill="tonexty",
-                fillcolor="rgba(16, 185, 129, 0.18)",
+                fillcolor="rgba(56, 189, 248, 0.16)",
                 name="90% Expected Band [q05–q95]",
             ))
             fig_fc.add_trace(go.Scatter(
                 x=sub_fc["date"], y=sub_fc["gercek"],
                 mode="lines+markers" if len(sub_fc) <= 40 else "lines",
                 name="Actual Temperature (°C)",
-                line=dict(color="#f8fafc", width=2.6),
+                line=dict(color="#ffffff", width=2.5),
             ))
             fig_fc.add_trace(go.Scatter(
                 x=sub_fc["date"], y=sub_fc["lightgbm"],
                 mode="lines+markers" if len(sub_fc) <= 40 else "lines",
                 name="Our AI Forecast — LightGBM (°C)",
-                line=dict(color=EMERALD, width=2.4),
+                line=dict(color="#fbbf24", width=3.0),
             ))
             if show_baselines:
                 fig_fc.add_trace(go.Scatter(
                     x=sub_fc["date"], y=sub_fc["persistence"],
                     mode="lines", name="Persistence Baseline (°C)",
-                    line=dict(color=AMBER, width=1.6, dash="dot"),
+                    line=dict(color="#a78bfa", width=1.8, dash="dot"),
                 ))
                 fig_fc.add_trace(go.Scatter(
                     x=sub_fc["date"], y=sub_fc["iklimatoloji"],
                     mode="lines", name="Climatology Baseline (°C)",
-                    line=dict(color=CORAL, width=1.6, dash="dash"),
+                    line=dict(color=CORAL, width=1.8, dash="dash"),
                 ))
             fig_fc.update_layout(xaxis_title="Date", yaxis_title="Daily Mean Temperature (°C)")
             show_fig(style_fig(fig_fc, 390))
