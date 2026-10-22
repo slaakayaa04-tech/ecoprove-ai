@@ -28,7 +28,6 @@ FAULT_SUMMARY_CSV = BASE_DIR / "data" / "sahte_hata_ozet.csv"
 FAULT_DETAILS_CSV = BASE_DIR / "data" / "sahte_hata_sonuc.csv"
 SENSITIVITY_CSV = BASE_DIR / "data" / "esik_duyarlilik.csv"
 DEMO_CASES_CSV = BASE_DIR / "data" / "demo_ornekleri.csv"
-ARCH_IMAGE_PATH = BASE_DIR / "assets" / "architecture_tr.png"
 BG_IMAGE_PATH = BASE_DIR / "assets" / "climatechain_bg.png"
 CONTRACT = "0x2b27fd49fd0C8325f8FE389a49BDDde1d6feCF89"
 RPC_URL = "https://ethereum-sepolia-rpc.publicnode.com"
@@ -38,9 +37,13 @@ CITY_LABELS = ["Ankara", "TEST"]  # Ankara = final roots, TEST = trial roots
 EMERALD, CYAN, CORAL = "#10b981", "#06b6d4", "#f43f5e"
 AMBER, CRIMSON, SLATE = "#f59e0b", "#ef4444", "#94a3b8"
 SOURCE_COLORS = [EMERALD, CYAN, CORAL, AMBER, "#a78bfa"]
-STATUS_COLORS = {"Trusted": EMERALD, "OK": EMERALD, "Review": AMBER,
-                 "Quarantined": CRIMSON, "Quarantine": CRIMSON,
-                 "Missing": SLATE, "No_Reference": SLATE}
+STATUS_ORDER = ["Trusted", "Review", "Quarantined", "Missing"]
+STATUS_COLORS = {
+    "Trusted": EMERALD,
+    "Review": AMBER,
+    "Quarantined": CRIMSON,
+    "Missing": SLATE,
+}
 
 # Plain-language explanations (used in tooltips)
 TIP = {
@@ -48,8 +51,8 @@ TIP = {
     "score": "Reliability Score (0–100). Close to 100 = the data sources agree and the value "
              "changes in a normal way over time (high confidence). Lower numbers = the sources "
              "disagree or the value jumps unusually.",
-    "ok": "OK: the sources agree and the value looks normal. Safe to use.",
-    "review": "Review: some disagreement or an unusual change. A person should check it "
+    "ok": "Trusted (84–100): the sources agree and the value looks normal. Safe to use.",
+    "review": "Review (50–83): some disagreement or an unusual change. A person should check it "
               "before using it.",
     "quarantine": "Quarantined (0–49): strong disagreement or a clear anomaly. Not deleted — "
                   "archived with its reason so it can be audited.",
@@ -62,8 +65,8 @@ TIP = {
             "fingerprint (a Merkle root) and stored on the blockchain, where it cannot be "
             "overwritten. If anyone changes even one number later, the fingerprint no longer "
             "matches, so the change is detected.",
-    "city": "TEST = trial fingerprints we stored while building the system. "
-            "Ankara = final fingerprints of the real data.",
+    "city": "Ankara = final fingerprints of the real data (80 months). "
+            "TEST = trial fingerprints stored during initial contract testing.",
 }
 
 ABI = [
@@ -203,7 +206,7 @@ def threshold_eval(df, var, op, thr):
     d = d[d[var].notna()].copy()
     d["crossed"] = d[var] < thr if op == "<" else d[var] >= thr
     days = d.groupby("date").agg(n=("crossed", "size"), yes=("crossed", "sum"),
-                                 flagged=("status", lambda s: bool((~s.isin(["OK", "Trusted"])).any())))
+                                 flagged=("status", lambda s: bool((s != "Trusted").any())))
     days["disagree"] = (days.n >= 2) & (days.yes > 0) & (days.yes < days.n)
     return d, days
 
@@ -253,7 +256,7 @@ a {{color: #6ee7b7 !important;}}
 .stCaption, [data-testid="stCaptionContainer"] {{color: #bbf7d0 !important; opacity: .88;}}
 
 /* ---------- Soft Frosted Glass Base ---------- */
-.glass, .card, .flow-step, .net, .hero,
+.glass, .card, .net, .hero,
 [data-testid="stExpander"] details {{
     background: rgba(10, 46, 36, 0.62) !important;
     backdrop-filter: blur(16px) !important;
@@ -313,28 +316,7 @@ a {{color: #6ee7b7 !important;}}
 .pill {{display: inline-block; background: rgba(255, 255, 255, 0.14);
        border: 1px solid rgba(255, 255, 255, 0.24); backdrop-filter: blur(6px);
        color: #ffffff; padding: .32rem .85rem; border-radius: 999px;
-       margin: 1rem .4rem 0 0; font-size: .86rem; font-weight: 500;}}
-.purpose {{margin-top: 1.2rem; background: rgba(8, 47, 43, 0.58);
-          border: 1px solid rgba(134, 239, 172, 0.28); border-left: 4px solid #6ee7b7;
-          backdrop-filter: blur(8px);
-          border-radius: 10px; padding: .75rem 1rem; color: #f0fdf4; font-size: .95rem;
-          line-height: 1.5; max-width: 920px;}}
-.purpose b {{color: #86efac;}}
-
-/* ---------- How it works ---------- */
-.flow {{display: flex; align-items: stretch; gap: .6rem; flex-wrap: wrap; margin-bottom: 1.2rem;}}
-.flow-step {{flex: 1 1 180px; display: flex; gap: .7rem; align-items: flex-start;
-            padding: .85rem .95rem; transition: all .2s ease;}}
-.flow-step:hover {{transform: translateY(-2px); border-color: rgba(110, 231, 183, .5) !important;
-                  box-shadow: 0 6px 20px rgba(16, 185, 129, .22);}}
-.flow-num {{flex: none; width: 30px; height: 30px; border-radius: 50%;
-           background: linear-gradient(135deg, #10b981, #14b8a6); color: #042f2e;
-           font-weight: 800; display: flex; align-items: center; justify-content: center;
-           font-size: .9rem; box-shadow: 0 0 12px rgba(16, 185, 129, .4);}}
-.flow-step b {{color: #f0fdf4; font-size: .98rem;}}
-.flow-step span {{color: #bbf7d0; font-size: .83rem; line-height: 1.4;}}
-.flow-arrow {{align-self: center; color: #86efac; font-size: 1.5rem; font-weight: 700;}}
-@media (max-width: 900px) {{.flow-arrow {{display: none;}}}}
+       margin: .9rem .4rem 0 0; font-size: .86rem; font-weight: 500;}}
 
 /* ---------- KPI cards ---------- */
 .card {{--accent: #34d399; padding: .95rem 1rem; height: 100%; min-width: 0;
@@ -465,7 +447,7 @@ months = sorted(data.ay.unique())
 # ------------------------------------------------------------------ sidebar
 with st.sidebar:
     st.markdown('<div class="brand">🌍 <span>EcoProve AI</span></div>'
-                '<div class="brand-sub">Trust Layer for Climate Data · Ankara, Türkiye</div>',
+                '<div class="brand-sub">Trust Layer for Climate Data · Ankara, Turkey</div>',
                 unsafe_allow_html=True)
     default_m_idx = months.index("2023-01") if "2023-01" in months else 0
     month = st.sidebar.selectbox("Month", months, index=default_m_idx,
@@ -473,20 +455,15 @@ with st.sidebar:
                               "show this month. Source Trust and Seal Registry show all 80 months.")
     city = st.selectbox("City Label on Chain", CITY_LABELS, help=TIP["city"])
 
-    block = latest_block()
-    dot = "dot" if block else "dot off"
-    block_txt = f"Latest block #{block:,}" if block else "Network not reachable right now"
     st.markdown(f"""
 <div class="net">
-  <div class="net-title">Live Network Status</div>
-  <div class="net-row"><span class="{dot}"></span>Ethereum Sepolia (Testnet)</div>
-  <div class="net-sub">{block_txt}</div>
+  <div class="net-title">On-Chain Registry</div>
+  <div class="net-row"><span class="dot"></span>Ethereum Sepolia Testnet</div>
+  <div class="net-sub">Chain ID: 11155111 · 80 Monthly Roots Sealed</div>
   <a class="addr" href="{ETHERSCAN_ADDR}" target="_blank">📄 {CONTRACT[:8]}…{CONTRACT[-6:]} ↗</a>
-  <div class="net-sub">The monthly fingerprints of the daily records are stored in this
-  smart contract.</div>
 </div>
 """, unsafe_allow_html=True)
-    st.caption("Copy Contract Address")
+    st.caption("Contract Address")
     st.code(CONTRACT, language=None)
 
 m = data[data.ay == month].reset_index(drop=True)
@@ -496,35 +473,13 @@ mn = numeric(m, ["score", "tmean"])
 st.markdown("""
 <div class="hero">
   <div class="title">🌍 <span>EcoProve AI</span></div>
-  <div class="sub">How much can you trust a climate number? We compare three data sources for Ankara,
-  predict a 90% expected range with LightGBM, score every daily record (0–100) without deleting
-  suspicious or missing days, and seal monthly Merkle roots on Ethereum Sepolia.</div>
-  <div class="purpose">🎯 <b>Why it matters:</b> parametric crop insurance pays out when a
-  threshold is crossed (for example "below 0 °C"), and clean-energy planners rely on
-  temperature thresholds too. If a sensor spikes to 45.8 °C or goes silent, deleting data hides
-  real climate disasters while blindly accepting it triggers false payouts. EcoProve quarantines
-  suspicious records with a clear reason and seals the audit trail on-chain.</div>
+  <div class="sub">Multi-source climate data reliability scoring, walk-forward LightGBM interval
+  forecasting, and immutable monthly Merkle verification on Ethereum Sepolia.</div>
   <span class="pill">📡 3 Sources (NASA · ERA5 · NOAA)</span>
   <span class="pill">📈 LightGBM 90% Expected Band</span>
   <span class="pill">🧠 Reliability Score 0–100</span>
   <span class="pill">🌳 80 Monthly Merkle Roots (2020–2026)</span>
   <span class="pill">🔗 Ethereum Sepolia</span>
-</div>
-""", unsafe_allow_html=True)
-
-st.markdown("""
-<div class="flow">
-  <div class="flow-step"><div class="flow-num">1</div><div><b>Collect & Align</b><br>
-    <span>Daily data (2020–2026) from NASA POWER, ERA5 and NOAA; silent station days kept as Missing.</span></div></div>
-  <div class="flow-arrow">→</div>
-  <div class="flow-step"><div class="flow-num">2</div><div><b>AI Band & Score</b><br>
-    <span>LightGBM 90% interval + cross-source check → Score (0–100) & Trusted / Review / Quarantined.</span></div></div>
-  <div class="flow-arrow">→</div>
-  <div class="flow-step"><div class="flow-num">3</div><div><b>Seal on Sepolia</b><br>
-    <span>Monthly keccak256 Merkle root stored on EcoProveRegistry smart contract.</span></div></div>
-  <div class="flow-arrow">→</div>
-  <div class="flow-step"><div class="flow-num">4</div><div><b>Verify & Audit</b><br>
-    <span>Anyone can verify any daily record or test a 0.1 °C tamper in 1 click.</span></div></div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -536,9 +491,9 @@ tab1, tab2, tab_ai, tab_fault, tab_thr, tab_trust, tab3, tab_reg, tab4 = st.tabs
 # ---------------------------------------------------------------- Overview
 with tab1:
     counts = m.status.value_counts()
-    ok_cnt = int(counts.get("Trusted", 0)) + int(counts.get("OK", 0))
-    quar_cnt = int(counts.get("Quarantined", 0)) + int(counts.get("Quarantine", 0))
-    miss_cnt = int(counts.get("Missing", 0)) + int(counts.get("No_Reference", 0))
+    ok_cnt = int(counts.get("Trusted", 0))
+    quar_cnt = int(counts.get("Quarantined", 0))
+    miss_cnt = int(counts.get("Missing", 0))
     c1, c2, c3, c4, c5, c6 = st.columns(6)
     card(c1, "Records", len(m), note=f"{m.source.nunique()} sources · {month}",
          help_text=TIP["records"], accent=CYAN)
@@ -568,11 +523,14 @@ with tab1:
     left, right = st.columns([1, 2])
     with left:
         st.markdown("### Status Breakdown")
-        sdf = pd.DataFrame({"Status": counts.index, "Records": counts.values})
+        present_statuses = [s for s in STATUS_ORDER if int(counts.get(s, 0)) > 0]
+        sdf = pd.DataFrame({
+            "Status": present_statuses,
+            "Records": [int(counts.get(s, 0)) for s in present_statuses],
+        })
         bars = px.bar(sdf, x="Status", y="Records", color="Status",
                       color_discrete_map=STATUS_COLORS,
-                      category_orders={"Status": ["Trusted", "OK", "Review", "Quarantined",
-                                                  "Quarantine", "Missing", "No_Reference"]})
+                      category_orders={"Status": present_statuses})
         bars.update_layout(showlegend=False, bargap=0.35)
         bars.update_traces(marker_line_width=0)
         show_fig(style_fig(bars, 290))
@@ -988,30 +946,23 @@ with tab3:
 
 # ------------------------------------------------------------ About & Limits
 with tab4:
-    if ARCH_IMAGE_PATH.exists():
-        st.markdown("### System Architecture (2020 – 2026 Pipeline)")
-        try:
-            st.image(str(ARCH_IMAGE_PATH), width="stretch")
-        except Exception:
-            st.image(str(ARCH_IMAGE_PATH), use_container_width=True)
-
-    st.markdown("### How to Use This Site")
+    st.markdown("### System Overview & Navigation")
     st.markdown("""
 | Tab | What you can do |
 |---|---|
-| 📊 **Overview** | See this month at a glance: scores, statuses (`Trusted`, `Review`, `Quarantined`, `Missing`). |
+| 📊 **Overview** | See the selected month at a glance: scores, statuses (`Trusted`, `Review`, `Quarantined`, `Missing`). |
 | 🔀 **Source Comparison** | Compare NASA POWER, Open-Meteo ERA5, and NOAA GHCN-Daily side by side. |
-| 📈 **AI Expected Band** | View the LightGBM 90% expected interval (`expected_low`–`expected_high`) and 2022–2026 walk-forward MAE. |
-| 🧪 **Fault Benchmark** | See how EcoProve catches injected sensor spikes/drift (~0.86 F1) without quarantining real heatwaves. |
+| 📈 **AI Forecast vs Actual** | View the LightGBM 90% expected interval (`expected_low`–`expected_high`) and 2023–2026 walk-forward forecast vs actuals. |
+| 🧪 **Fault Benchmark** | See how EcoProve catches injected sensor spikes/drift (~0.865 F1) without quarantining real heatwaves. |
 | 🎯 **Threshold Check** | Pick a decision rule (e.g., frost below 0 °C) and see on which days sources disagree. |
-| 🏆 **Source Trust** | Compare long-term reliability and missing days across the 3 sources (2023–2026). |
+| 🏆 **Source Trust** | Compare long-term reliability and missing days across the 3 sources (2020–2026). |
 | 🔗 **Verify on Chain** | Check any single record against Ethereum Sepolia and run a 0.1 °C tamper test. |
-| 📜 **Seal Registry** | Audit all 44 monthly Merkle roots (`2023-01` to `2026-08`) against the smart contract. |
+| 📜 **Seal Registry** | Audit all 80 monthly Merkle roots (`2020-01` to `2026-08`) against the smart contract. |
 """)
     st.markdown("### Methodology & Scoring Formula (v1)")
     st.markdown("""
-- **Data Collection & Alignment (2020–2026):** Daily temperature for Ankara from **NASA POWER** (~1128 m), **Open-Meteo ERA5** (~883 m, reference series), and **NOAA GHCN-Daily** (Ankara Central Station, 891 m). Silent station days are never deleted — they remain in the calendar as `Missing` (e.g., 19 historical silent days + 7 consecutive days in late March / early April 2026).
-- **Training vs Walk-Forward Test Split:** `2020–2022` is the training/reference baseline used to learn monthly elevation bias and initial LightGBM quantile models without data leakage. Scored & sealed records cover **`2023-01` through `2026-08` (44 months, 4,017 records)** via walk-forward expansion (`2024` trained on `2020–2023`, `2025` on `2020–2024`, `2026` on `2020–2025`).
+- **Data Collection & Alignment (2020–2026):** Daily temperature for Ankara, Turkey from **NASA POWER** (~1128 m), **Open-Meteo ERA5** (~883 m, reference series), and **NOAA GHCN-Daily** (Ankara Central Station, 891 m). Silent station days are never deleted — they remain in the calendar as `Missing` (27 missing station records across 2020–2026, including 7 consecutive days in late March / early April 2026).
+- **Training vs Walk-Forward Test Split:** `2020–2022` serves as the initial reference baseline for monthly elevation bias and LightGBM quantile models without data leakage, followed by walk-forward expansion (`2023` trained on `2020–2022`, `2024` on `2020–2023`, `2025` on `2020–2024`, `2026` on `2020–2025`). All **80 months (`2020-01` through `2026-08`, 7,305 records)** are scored and sealed on-chain.
 - **Penalty & Reliability Score (0–100):**
   $$z_{\\text{eff}} = z_{\\text{cross}} + z_{\\text{interval}} + 3 \\times \\text{repeat}$$
   where $z_{\\text{cross}}$ is cross-source deviation after monthly elevation-bias correction, $z_{\\text{interval}}$ is distance outside the LightGBM 90% expected band, and $\\text{repeat}$ flags a stuck sensor (3 identical consecutive days).
@@ -1092,9 +1043,9 @@ with tab_thr:
              help_text="Days where one source says YES and another says NO. On these days "
                        "the decision depends on the data source.")
         card(k4, "Disagreement Flagged", f"{n_dis_flag}/{n_dis}", CRIMSON,
-             "marked Review / Quarantine", accent=CRIMSON,
+             "marked Review / Quarantined", accent=CRIMSON,
              help_text="Of the disagreement days, how many had at least one record that "
-                       "EcoProve marked Review or Quarantine.")
+                       "EcoProve marked Review or Quarantined.")
 
         st.markdown(f"### Rule Result per Day and Source ({var_t} {sym} {thr_t:g})")
         st.caption("Green = rule met, grey = not met. Amber bands = days where the sources "
@@ -1131,10 +1082,10 @@ with tab_trust:
     dn = numeric(data, ["score"])
     trust = dn.groupby("source").agg(
         records=("score", "size"), avg=("score", "mean"),
-        ok=("status", lambda s: s.isin(["OK", "Trusted"]).mean() * 100),
+        ok=("status", lambda s: (s == "Trusted").mean() * 100),
         review=("status", lambda s: (s == "Review").mean() * 100),
-        quar=("status", lambda s: s.isin(["Quarantined", "Quarantine"]).mean() * 100),
-        missing=("status", lambda s: s.isin(["Missing", "No_Reference"]).sum()),
+        quar=("status", lambda s: (s == "Quarantined").mean() * 100),
+        missing=("status", lambda s: (s == "Missing").sum()),
     ).reset_index().sort_values("avg", ascending=False).reset_index(drop=True)
 
     medals = ["🥇", "🥈", "🥉", "🏅", "🏅"]
@@ -1152,8 +1103,7 @@ with tab_trust:
         st.markdown("### Status Share per Source")
         share = px.histogram(data, y="source", color="status", barnorm="percent",
                              color_discrete_map=STATUS_COLORS, orientation="h",
-                             category_orders={"status": ["Trusted", "OK", "Review", "Quarantined",
-                                                         "Quarantine", "Missing", "No_Reference"]},
+                             category_orders={"status": STATUS_ORDER},
                              labels={"source": "", "status": "Status"})
         share.update_layout(xaxis_title="% of records", bargap=0.35)
         share.update_traces(marker_line_width=0)
