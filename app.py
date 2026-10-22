@@ -529,7 +529,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 tab1, tab2, tab_ai, tab_fault, tab_thr, tab_trust, tab3, tab_reg, tab4 = st.tabs([
-    "📊 Overview", "🔀 Source Comparison", "📈 AI Expected Band", "🧪 Fault Benchmark",
+    "📊 Overview", "🔀 Source Comparison", "📈 AI Forecast vs Actual", "🧪 Fault Benchmark",
     "🎯 Threshold Check", "🏆 Source Trust", "🔗 Verify on Chain", "📜 Seal Registry",
     "ℹ️ About & Limits"])
 
@@ -635,14 +635,115 @@ with tab2:
 
 # ------------------------------------------------------- AI Expected Band
 with tab_ai:
-    st.markdown("### LightGBM 90% Expected Temperature Band (Zero Data Leakage)")
+    st.markdown("### Walk-Forward AI Forecast vs Actual Temperature (2023 – 2026)")
     st.markdown(
-        "To answer *\"Given only the past, what range should today's temperature fall in?\"*, "
-        "we trained a **LightGBM quantile model (5th and 95th percentiles)** using only past "
-        "lags (`lag1`, `lag2`), 7/30-day rolling averages, and seasonality. **Same-day values from "
-        "other sources are never used as features.**"
+        "Each year is predicted **strictly using past years** (zero data leakage):\n"
+        "- **2023 Forecast:** Trained on `2020–2022` → Tested on `2023`\n"
+        "- **2024 Forecast:** Trained on `2020–2023` → Tested on `2024`\n"
+        "- **2025 Forecast:** Trained on `2020–2024` → Tested on `2025`\n"
+        "- **2026 Forecast:** Trained on `2020–2025` → Tested on `2026`"
     )
 
+    if FORECAST_CSV.exists() and FORECAST_SUMMARY_CSV.exists():
+        fc_df = pd.read_csv(FORECAST_CSV)
+        fsum = pd.read_csv(FORECAST_SUMMARY_CSV)
+
+        yr_options = [
+            "2026 (Trained on 2020–2025)",
+            "2025 (Trained on 2020–2024)",
+            "2024 (Trained on 2020–2023)",
+            "2023 (Trained on 2020–2022)",
+            f"Selected Sidebar Month ({month})",
+        ]
+        c_sel1, c_sel2 = st.columns([2, 2])
+        yr_choice = c_sel1.selectbox("Select Walk-Forward Test Period", yr_options)
+        show_baselines = c_sel2.checkbox("Also show Persistence & Climatology baselines on chart", value=False)
+
+        if yr_choice.startswith("Selected Sidebar"):
+            sel_year = int(month[:4]) if int(month[:4]) in [2022, 2023, 2024, 2025, 2026] else 2023
+            sub_fc = fc_df[fc_df["date"].str.startswith(month)].copy()
+            period_label = f"Month {month}"
+        else:
+            sel_year = int(yr_choice[:4])
+            sub_fc = fc_df[fc_df["yil"] == sel_year].copy()
+            period_label = yr_choice
+
+        r_row = fsum[fsum["test_yili"] == sel_year].iloc[0] if (fsum["test_yili"] == sel_year).any() else fsum.iloc[-1]
+        f1, f2, f3, f4 = st.columns(4)
+        card(f1, f"{sel_year} Our AI (LightGBM) MAE", f"{r_row['MAE_lightgbm']:.2f} °C", EMERALD,
+             f"trained on {r_row['egitim']}", accent=EMERALD)
+        card(f2, f"{sel_year} Persistence MAE", f"{r_row['MAE_persistence']:.2f} °C", AMBER,
+             "yesterday = today baseline", accent=AMBER)
+        card(f3, f"{sel_year} Climatology MAE", f"{r_row['MAE_iklimatoloji']:.2f} °C", CORAL,
+             "historical day average", accent=CORAL)
+        card(f4, "90% Expected Band Coverage", f"{r_row['aralik_kapsama'] * 100:.1f}%", CYAN,
+             f"avg band width {r_row['aralik_genislik']:.1f} °C", accent=CYAN)
+
+        st.markdown(f"#### Actual vs Our LightGBM Forecast — {period_label}")
+        st.caption("Green shaded area = LightGBM 90% expected interval [alt, ust]. "
+                   "White line = Actual Temperature. Emerald line = Our LightGBM AI Forecast.")
+
+        if not sub_fc.empty:
+            fig_fc = go.Figure()
+            fig_fc.add_trace(go.Scatter(
+                x=sub_fc["date"], y=sub_fc["ust"],
+                mode="lines", line=dict(width=0), showlegend=False, hoverinfo="skip",
+            ))
+            fig_fc.add_trace(go.Scatter(
+                x=sub_fc["date"], y=sub_fc["alt"],
+                mode="lines", line=dict(width=0), fill="tonexty",
+                fillcolor="rgba(16, 185, 129, 0.18)",
+                name="90% Expected Band [q05–q95]",
+            ))
+            fig_fc.add_trace(go.Scatter(
+                x=sub_fc["date"], y=sub_fc["gercek"],
+                mode="lines+markers" if len(sub_fc) <= 40 else "lines",
+                name="Actual Temperature (°C)",
+                line=dict(color="#f8fafc", width=2.6),
+            ))
+            fig_fc.add_trace(go.Scatter(
+                x=sub_fc["date"], y=sub_fc["lightgbm"],
+                mode="lines+markers" if len(sub_fc) <= 40 else "lines",
+                name="Our AI Forecast — LightGBM (°C)",
+                line=dict(color=EMERALD, width=2.4),
+            ))
+            if show_baselines:
+                fig_fc.add_trace(go.Scatter(
+                    x=sub_fc["date"], y=sub_fc["persistence"],
+                    mode="lines", name="Persistence Baseline (°C)",
+                    line=dict(color=AMBER, width=1.6, dash="dot"),
+                ))
+                fig_fc.add_trace(go.Scatter(
+                    x=sub_fc["date"], y=sub_fc["iklimatoloji"],
+                    mode="lines", name="Climatology Baseline (°C)",
+                    line=dict(color=CORAL, width=1.6, dash="dash"),
+                ))
+            fig_fc.update_layout(xaxis_title="Date", yaxis_title="Daily Mean Temperature (°C)")
+            show_fig(style_fig(fig_fc, 390))
+
+            sub_fc["abs_err"] = (sub_fc["lightgbm"] - sub_fc["gercek"]).abs().round(2)
+            sub_fc["in_band"] = ((sub_fc["gercek"] >= sub_fc["alt"]) & (sub_fc["gercek"] <= sub_fc["ust"])).map(
+                {True: "✅ Inside [alt, ust]", False: "⚠️ Outside Band"}
+            )
+            with st.expander(f"📋 Show Daily Actual vs Forecast Table ({len(sub_fc)} days)"):
+                show_table(sub_fc[["date", "gercek", "lightgbm", "abs_err", "alt", "ust", "in_band", "persistence", "iklimatoloji"]].rename(columns={
+                    "date": "Date", "gercek": "Actual (°C)", "lightgbm": "Our AI Forecast (°C)",
+                    "abs_err": "Abs Error (°C)", "alt": "Expected Low q05 (°C)",
+                    "ust": "Expected High q95 (°C)", "in_band": "90% Band Check",
+                    "persistence": "Persistence (°C)", "iklimatoloji": "Climatology (°C)",
+                }))
+        else:
+            st.info("Walk-forward forecast starts after the 2020–2021 initial training window. Pick 2023–2026 above to view.")
+
+        st.markdown("#### Walk-Forward Summary Across All Test Years (2023 – 2026)")
+        show_table(fsum[fsum["test_yili"] >= 2023].rename(columns={
+            "test_yili": "Test Year", "egitim": "Training Period", "gun": "Days",
+            "MAE_persistence": "Persistence MAE (°C)", "MAE_lightgbm": "Our AI (LightGBM) MAE (°C)",
+            "MAE_iklimatoloji": "Climatology MAE (°C)", "aralik_kapsama": "Band Coverage",
+            "aralik_genislik": "Band Width (°C)", "sicak5_hata": "Top-5% Hot Days MAE (°C)",
+        }))
+
+    st.markdown(f"#### All 3 Sources vs LightGBM 90% Expected Band ({month})")
     mb = numeric(m, ["tmean", "expected_low", "expected_high"])
     band_days = mb[["date", "expected_low", "expected_high"]].drop_duplicates("date").sort_values("date")
     fig_band = go.Figure()
@@ -664,30 +765,7 @@ with tab_ai:
             marker=dict(size=6),
         ))
     fig_band.update_layout(xaxis_title="Date", yaxis_title="Daily Mean Temperature (°C)")
-    show_fig(style_fig(fig_band, 380))
-
-    if FORECAST_SUMMARY_CSV.exists():
-        fsum = pd.read_csv(FORECAST_SUMMARY_CSV)
-        st.markdown("### Walk-Forward Validation (2022 – 2026)")
-        st.caption("Each test year is predicted by a model trained strictly on earlier years "
-                   "(e.g., 2026 is trained on 2020–2025). LightGBM beats both Persistence and Climatology.")
-        f1, f2, f3, f4 = st.columns(4)
-        r26 = fsum[fsum["test_yili"] == 2026].iloc[0] if (fsum["test_yili"] == 2026).any() else fsum.iloc[-1]
-        card(f1, "2026 LightGBM MAE", f"{r26['MAE_lightgbm']:.2f} °C", EMERALD,
-             "trained on 2020–2025", accent=EMERALD)
-        card(f2, "2026 Persistence MAE", f"{r26['MAE_persistence']:.2f} °C", AMBER,
-             "yesterday = today baseline", accent=AMBER)
-        card(f3, "2026 Climatology MAE", f"{r26['MAE_iklimatoloji']:.2f} °C", CORAL,
-             "historical day average", accent=CORAL)
-        card(f4, "90% Band Coverage", f"{r26['aralik_kapsama'] * 100:.1f}%", CYAN,
-             f"avg width {r26['aralik_genislik']:.1f} °C", accent=CYAN)
-
-        show_table(fsum.rename(columns={
-            "test_yili": "Test Year", "egitim": "Training Period", "gun": "Days",
-            "MAE_persistence": "Persistence MAE (°C)", "MAE_lightgbm": "LightGBM MAE (°C)",
-            "MAE_iklimatoloji": "Climatology MAE (°C)", "aralik_kapsama": "Band Coverage",
-            "aralik_genislik": "Band Width (°C)", "sicak5_hata": "Top-5% Hot Days MAE (°C)",
-        }))
+    show_fig(style_fig(fig_band, 350))
 
 # ------------------------------------------------------- Fault Benchmark
 with tab_fault:
