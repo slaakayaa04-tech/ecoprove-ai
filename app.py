@@ -447,7 +447,7 @@ months = sorted(data.ay.unique())
 # ------------------------------------------------------------------ sidebar
 with st.sidebar:
     st.markdown('<div class="brand">🌍 <span>EcoProve AI</span></div>'
-                '<div class="brand-sub">Trust Layer for Climate Data · Ankara, Turkey</div>',
+                '<div class="brand-sub">Trust Layer for Climate Data · Ankara, Türkiye</div>',
                 unsafe_allow_html=True)
     default_m_idx = months.index("2023-01") if "2023-01" in months else 0
     month = st.sidebar.selectbox("Month", months, index=default_m_idx,
@@ -961,7 +961,7 @@ with tab4:
 """)
     st.markdown("### Methodology & Scoring Formula (v1)")
     st.markdown("""
-- **Data Collection & Alignment (2020–2026):** Daily temperature for Ankara, Turkey from **NASA POWER** (~1128 m), **Open-Meteo ERA5** (~883 m, reference series), and **NOAA GHCN-Daily** (Ankara Central Station, 891 m). Silent station days are never deleted — they remain in the calendar as `Missing` (27 missing station records across 2020–2026, including 7 consecutive days in late March / early April 2026).
+- **Data Collection & Alignment (2020–2026):** Daily temperature for Ankara, Türkiye from **NASA POWER** (~1128 m), **Open-Meteo ERA5** (~883 m, reference series), and **NOAA GHCN-Daily** (Ankara Central Station, 891 m). Silent station days are never deleted — they remain in the calendar as `Missing` (27 missing station records across 2020–2026, including 7 consecutive days in late March / early April 2026).
 - **Training vs Walk-Forward Test Split:** `2020–2022` serves as the initial reference baseline for monthly elevation bias and LightGBM quantile models without data leakage, followed by walk-forward expansion (`2023` trained on `2020–2022`, `2024` on `2020–2023`, `2025` on `2020–2024`, `2026` on `2020–2025`). All **80 months (`2020-01` through `2026-08`, 7,305 records)** are scored and sealed on-chain.
 - **Penalty & Reliability Score (0–100):**
   $$z_{\\text{eff}} = z_{\\text{cross}} + z_{\\text{interval}} + 3 \\times \\text{repeat}$$
