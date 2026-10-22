@@ -1,0 +1,3 @@
+mod,precision_mean,precision_std,recall_mean,recall_std,F1_mean,F1_std,yanlis_alarm_mean,yanlis_alarm_std,yakalama_sicrama_mean,yakalama_sicrama_std,yakalama_birim_hatasi_mean,yakalama_birim_hatasi_std,yakalama_takili_sensor_mean,yakalama_takili_sensor_std,yakalama_drift_mean,yakalama_drift_std,gercek_ekstrem_karantina_mean,gercek_ekstrem_karantina_std
+guven_ACIK,0.801,0.029,0.903,0.036,0.849,0.025,0.066,0.012,1.0,0.0,1.0,0.0,0.96,0.036,0.856,0.066,0.031,0.028
+guven_KAPALI,0.858,0.016,0.872,0.029,0.865,0.017,0.042,0.006,1.0,0.0,1.0,0.0,0.896,0.058,0.822,0.051,0.014,0.015
