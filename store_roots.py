@@ -141,19 +141,20 @@ def main():
                 h = w3.eth.send_raw_transaction(raw)
                 break
             except Exception as e:
-                if "in-flight" in str(e) and attempt < 8:
+                err_s = str(e).lower()
+                if any(k in err_s for k in ["in-flight", "nonce", "underpriced", "replacement", "timeout", "502", "503", "429"]) and attempt < 8:
                     print(f"[bekle]  {city} {period}: ağ önceki işlemi tamamlıyor, "
-                          f"20 sn sonra tekrar ({attempt}/8)")
-                    time.sleep(20)
+                          f"10 sn sonra tekrar ({attempt}/8)", flush=True)
+                    time.sleep(10)
                     continue
                 raise
         rc = w3.eth.wait_for_transaction_receipt(h, timeout=240)
         link = f"https://sepolia.etherscan.io/tx/{Web3.to_hex(h)}"
         if rc.status == 1:
-            print(f"[yazıldı] {city} {period}  {link}")
+            print(f"[yazıldı] {city} {period}  {link}", flush=True)
         else:
             sys.exit(f"[HATA] {city} {period} başarısız: {link}")
-        time.sleep(15)
+        time.sleep(2)
 
     print("\nBitti.")
 

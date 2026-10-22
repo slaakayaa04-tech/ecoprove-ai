@@ -33,7 +33,7 @@ BG_IMAGE_PATH = BASE_DIR / "assets" / "climatechain_bg.png"
 CONTRACT = "0x2b27fd49fd0C8325f8FE389a49BDDde1d6feCF89"
 RPC_URL = "https://ethereum-sepolia-rpc.publicnode.com"
 ETHERSCAN_ADDR = f"https://sepolia.etherscan.io/address/{CONTRACT}"
-CITY_LABELS = ["TEST", "Ankara"]  # TEST = trial roots, Ankara = final roots
+CITY_LABELS = ["Ankara", "TEST"]  # Ankara = final roots, TEST = trial roots
 
 EMERALD, CYAN, CORAL = "#10b981", "#06b6d4", "#f43f5e"
 AMBER, CRIMSON, SLATE = "#f59e0b", "#ef4444", "#94a3b8"
