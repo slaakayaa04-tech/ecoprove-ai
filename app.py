@@ -25,6 +25,7 @@ CSV_PATH = str(BASE_DIR / "data" / "reliability_scores_v1.csv")
 FORECAST_CSV = BASE_DIR / "data" / "tahmin_yillik_2026.csv"
 FORECAST_SUMMARY_CSV = BASE_DIR / "data" / "tahmin_yillik_ozet_2026.csv"
 FAULT_SUMMARY_CSV = BASE_DIR / "data" / "sahte_hata_ozet.csv"
+FAULT_DETAILS_CSV = BASE_DIR / "data" / "sahte_hata_sonuc.csv"
 SENSITIVITY_CSV = BASE_DIR / "data" / "esik_duyarlilik.csv"
 DEMO_CASES_CSV = BASE_DIR / "data" / "demo_ornekleri.csv"
 ARCH_IMAGE_PATH = BASE_DIR / "assets" / "architecture_tr.png"
@@ -725,6 +726,68 @@ with tab_fault:
         f_bar.update_yaxes(range=[0, 115])
         f_bar.update_layout(showlegend=False)
         show_fig(style_fig(f_bar, 300))
+
+    if FAULT_DETAILS_CSV.exists():
+        st.markdown("#### 3 · 🚨 Quarantine Archive & Injected Fault Timeline (46 Quarantined · 27 Review)")
+        st.caption(
+            "When sensor faults are injected into the NOAA station series (spikes, °C/°F unit errors, "
+            "stuck sensors, and 20-day drift), EcoProve flags 46 days as Quarantined (red) and 27 days "
+            "as Review (amber) — while keeping real multi-source heatwaves (+7 °C) Trusted."
+        )
+        fd = pd.read_csv(FAULT_DETAILS_CSV)
+        fd["score"] = (100 * (2.0 ** (-((fd["z_eff"] / 6.0) ** 2)))).round().astype(int)
+        label_map = {
+            "temiz": "Clean Day",
+            "sicrama": "Sudden Spike (±15 °C)",
+            "birim_hatasi": "Unit Error (°C ↔ °F)",
+            "takili_sensor": "Stuck Sensor",
+            "drift": "Gradual Drift (+6 °C)",
+            "gercek_ekstrem": "Real Heatwave (+7 °C all 3 sources)",
+        }
+        fd["Reason / Scenario"] = fd["etiket"].map(lambda x: label_map.get(x, x))
+
+        fig_f = go.Figure()
+        fig_f.add_trace(go.Scatter(
+            x=fd["date"], y=fd["temiz_deger"], mode="lines",
+            name="Original Clean NOAA (°C)",
+            line=dict(color="rgba(167, 243, 208, 0.45)", width=2, dash="dot"),
+        ))
+        for st_name, col_hex in [("Trusted", EMERALD), ("Review", AMBER), ("Quarantined", CRIMSON)]:
+            sub = fd[fd["durum"] == st_name]
+            if not sub.empty:
+                fig_f.add_trace(go.Scatter(
+                    x=sub["date"], y=sub["sensor_bozuk"], mode="markers",
+                    name=f"{st_name} ({len(sub)} days)",
+                    marker=dict(color=col_hex, size=9 if st_name != "Trusted" else 5,
+                                symbol="diamond" if st_name == "Quarantined" else "circle"),
+                    customdata=sub[["Reason / Scenario", "temiz_deger", "z_eff", "score"]],
+                    hovertemplate=(
+                        "<b>%{x}</b><br>Reported: %{y:.2f} °C (Clean: %{customdata[1]:.2f} °C)<br>"
+                        "Scenario: %{customdata[0]}<br>z_eff: %{customdata[2]:.2f} · Score: %{customdata[3]}<extra></extra>"
+                    ),
+                ))
+        fig_f.update_layout(xaxis_title="Date (2023 Benchmark)", yaxis_title="NOAA Temperature (°C)")
+        show_fig(style_fig(fig_f, 360))
+
+        filt = st.radio(
+            "Filter Archive Table",
+            ["🚨 Quarantined Only (46 records)", "⚠️ Quarantined + Review (73 records)",
+             "🔥 Real Heatwaves (12 records)", "📋 All 365 Days"],
+            horizontal=True,
+        )
+        if filt.startswith("🚨"):
+            sub_tbl = fd[fd["durum"] == "Quarantined"]
+        elif filt.startswith("⚠️"):
+            sub_tbl = fd[fd["durum"].isin(["Quarantined", "Review"])]
+        elif filt.startswith("🔥"):
+            sub_tbl = fd[fd["etiket"] == "gercek_ekstrem"]
+        else:
+            sub_tbl = fd
+
+        show_table(sub_tbl[["date", "Reason / Scenario", "sensor_bozuk", "temiz_deger", "z_eff", "score", "durum"]].rename(columns={
+            "date": "Date", "sensor_bozuk": "Reported Tmean (°C)", "temiz_deger": "Clean Tmean (°C)",
+            "z_eff": "Penalty (z_eff)", "score": "Score (0–100)", "durum": "Decision Status",
+        }))
 
     if SENSITIVITY_CSV.exists():
         with st.expander("📊 Show Full Threshold Sensitivity Table (Precision / Recall / F1)"):
