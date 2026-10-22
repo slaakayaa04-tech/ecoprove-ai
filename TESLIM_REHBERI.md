@@ -1,8 +1,4 @@
-# 🌍 EcoProve AI — Yarışma Teslim Rehberi & Video Metni (Kopyala-Yapıştır)
-
-Bu dosya, **bu hackathonda hangi temel soruna çözüm ürettiğimizi**, yarışma teslim formuna yapıştırılacak **hazır İngilizce ve Türkçe cevapları**, **resmi linkleri** ve **3 dakikalık demo videosu konuşma metnini** içerir.
-
----
+# 🌍 EcoProve AI — Yarışma Teslim Rehberi & Video Metni 
 
 ## 🎯 0. Biz Bu Hackathonda Hangi Soruna Çözüm Ürettik? (Özet Mantık)
 
