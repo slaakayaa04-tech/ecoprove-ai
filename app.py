@@ -124,15 +124,20 @@ def hx(b):
 
 # ------------------------------------------------------------------- data
 @st.cache_data
-def load_data():
-    d = pd.read_csv(CSV_PATH, keep_default_na=False)
+def _load_data_cached(csv_path, file_size):
+    d = pd.read_csv(csv_path, keep_default_na=False)
     d = d.sort_values(["date", "source"]).reset_index(drop=True)
     d["ay"] = d.date.str[:7]
     return d
 
 
+def load_data():
+    p = Path(CSV_PATH)
+    return _load_data_cached(CSV_PATH, p.stat().st_size if p.exists() else 0)
+
+
 @st.cache_data
-def month_leaves(ay):
+def month_leaves(ay, file_size=7305):
     d = load_data()
     return [yaprak(r) for r in d[d.ay == ay].itertuples()]
 
@@ -186,7 +191,7 @@ def chain_lookup(city, period):
 
 
 @st.cache_data
-def all_local_roots():
+def all_local_roots(version="v80_2020_2026"):
     d = load_data()
     return {ay: (hx(kok(month_leaves(ay))), int((d.ay == ay).sum()))
             for ay in sorted(d.ay.unique())}
