@@ -20,7 +20,7 @@ LAMBDA = 0.97            # unutma katsayisi: ~33 gunluk hafiza
 UYUM_ESIGI = 3.0         # kaynaklar arasi z <= 3 ise o gun "uyumlu" sayilir
 TOHUMLAR = range(10)
 
-# ------------------------------------------------------------------ veri
+# veri
 d = pd.read_csv("ecoprove_long.csv", parse_dates=["date"])
 w = d.pivot(index="date", columns="source", values="tmean")
 fc = pd.read_csv("tahmin_2023.csv", parse_dates=["date"]).set_index("date")
@@ -44,7 +44,7 @@ ref_sap = w_d.sub(w_d.median(axis=1), axis=0)
 olcek = {s: ref_sap[s][egitim].std() for s in kaynaklar}     # egitim yillarinin standart sapmasi
 
 
-# ------------------------------------------------------------------ kaynak guveni
+# kaynak guveni
 def guven_serisi(z_cross):
     """Beta-reputation. Her gun: o gunden ONCEKI davranisa gore guven = a / (a + b).
     Sonra bugunun gozlemi eklenir (uyumlu -> a artar, uyumsuz -> b artar), eskiler LAMBDA ile solar."""
@@ -140,7 +140,7 @@ def metrik(z, etiket, hatali, t_rev, t_quar):
     return r
 
 
-# ------------------------------------------------------------------ 10 tohum
+# 10 tohum
 kayit = []
 for seed in TOHUMLAR:
     bad, etiket, hatali = hata_ekle(seed)
@@ -169,7 +169,7 @@ for mod in ["guven_KAPALI", "guven_ACIK"]:
 print("\n=== ESIK DUYARLILIGI (10 tohum ortalamasi) ===")
 print(esik.to_string())
 
-# ------------------------------------------------------------------ kaynak guveni 2023 (temiz) + grafik
+# kaynak guveni 2023 (temiz) + grafik
 _, _, g_temiz = z_hesapla(w.copy())
 g23 = g_temiz.loc[test]
 g23.round(3).to_csv("kaynak_guveni_2023.csv", index_label="date")

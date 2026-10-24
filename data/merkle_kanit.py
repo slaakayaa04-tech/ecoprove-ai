@@ -1,6 +1,6 @@
 """EcoProve AI - Merkle kanıt dosyası
 Her kayıt için "bu kayıt şu ayın köküne aittir" kanıtını (Merkle proof) bir dosyaya yazar.
-Sıla'nın backend'i ve doğrulama ekranı bu dosyayı okuyup kaydı zincirdeki kökle karşılaştırır.
+Doğrulama ekranı bu dosyayı okuyup kaydı zincirdeki kökle karşılaştırır.
 
 Kullanım (en basit): python merkle_kanit.py
   Sadece reliability_scores_v1.csv gerekir. Kökleri kendisi hesaplar, merkle_roots_v1.csv ve
@@ -95,8 +95,8 @@ if __name__ == "__main__":
             uyusmayan = [ay for ay, r, _ in kokler if beklenen.get(ay) != r]
             if uyusmayan:
                 print(f"\nUYARI: {KARSILASTIR} ile {len(uyusmayan)}/{len(kokler)} ayın kökü uyuşmuyor ({', '.join(uyusmayan[:3])}...).")
-                print("  Bu dosya reliability_scores_v1.csv ile aynı çalıştırmadan çıkmamış olabilir (ör. eski prototip).")
-                print("  Zincire yazılan köklerle karşılaştırmak için Sıla'nın yazdığı kökleri kullanın.")
+                print("  Bu dosya reliability_scores_v1.csv ile aynı çalıştırmadan çıkmamış olabilir.")
+                print("  Zincire yazılan köklerle karşılaştırmak için güncel merkle_roots.csv dosyasını kullanın.")
             else:
                 print(f"\nKök kontrolü: tüm aylar {KARSILASTIR} ile birebir aynı")
         except Exception as e:

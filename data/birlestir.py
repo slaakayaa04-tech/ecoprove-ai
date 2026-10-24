@@ -4,7 +4,7 @@ import pandas as pd, numpy as np, io
 U = ""
 OUT = ""
 
-# --- NASA POWER (günlük, -999 = eksik, YEAR+DOY -> tarih)
+# NASA POWER (günlük, -999 = eksik, YEAR+DOY -> tarih)
 txt = open(U+"ankara_veri_nasa_power_2020-2025.csv", encoding="utf-8").read()
 body = txt.split("-END HEADER-")[1].strip()
 n = pd.read_csv(io.StringIO(body)).replace(-999, np.nan)
@@ -12,13 +12,13 @@ n["date"] = pd.to_datetime(n.YEAR.astype(str)) + pd.to_timedelta(n.DOY-1, unit="
 nasa = n.rename(columns={"T2M":"tmean","RH2M":"rh","WS10M":"wind_ms",
                          "PRECTOTCORR":"prcp"})[["date","tmean","rh","wind_ms","prcp"]]
 
-# --- NOAA GHCN-Daily (günlük, boş = eksik)
+# NOAA GHCN-Daily (günlük, boş = eksik)
 o = pd.read_csv(U+"noaa_ankaa.csv")
 o["date"] = pd.to_datetime(o.DATE)
 noaa = o.rename(columns={"TAVG":"tmean","TMAX":"tmax","TMIN":"tmin","PRCP":"prcp"})[
     ["date","tmean","tmax","tmin","prcp"]]
 
-# --- Open-Meteo (saatlik + günlük bölüm, yerel saat Europe/Istanbul)
+# Open-Meteo (saatlik + günlük bölüm, yerel saat Europe/Istanbul)
 # Sütunları ada göre bulur; farklı sürümlerdeki dosyalarla da çalışır.
 lines = open(U+"open-meteo-39_96N32_81E_ankara883m__1_.csv", encoding="utf-8").read().replace("\r","").split("\n")
 heads = [i for i,l in enumerate(lines) if l.startswith("time,")]
@@ -50,7 +50,7 @@ if "wind_kmh" in om.columns:
     om["wind_ms"] = (om["wind_kmh"]/3.6).round(2)
 om = om.reset_index()
 
-# --- ortak takvim: 2020-01-01 .. 2025-12-31 (eksik günler satır olarak kalsın)
+# ortak takvim: 2020-01-01 .. 2025-12-31 (eksik günler satır olarak kalsın)
 cal = pd.DataFrame({"date": pd.date_range("2020-01-01","2025-12-31")})
 cols = ["tmean","tmax","tmin","rh","wind_ms","prcp","rad_mj"]
 frames = []
@@ -72,7 +72,7 @@ wide = long.pivot(index="date", columns="source", values=["tmean","tmax","tmin",
 wide.columns = [f"{v}_{s}" for v,s in wide.columns]
 wide.reset_index().to_csv(OUT+"ecoprove_wide.csv", index=False)
 
-# --- rapor
+# rapor
 print("Satır yok (takvimde eksik gün):")
 for s,g in long.groupby("source"): print(" ", s, int((~g.row_present).sum()))
 missing = sorted(long[(long.source=="NOAA_GHCN") & ~long.row_present].date)

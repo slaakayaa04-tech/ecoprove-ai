@@ -21,7 +21,7 @@ BITIS = "2026-08-31"          # aylık Merkle kökleri için tam aylar (Ocak-Ağ
 
 eski = pd.read_csv("ecoprove_long.csv", parse_dates=["date"])
 
-# --- NASA POWER (birlestir.py ile aynı)
+# NASA POWER (birlestir.py ile aynı)
 txt = open("nasa_2026.csv", encoding="utf-8").read()
 body = txt.split("-END HEADER-")[1].strip()
 n = pd.read_csv(io.StringIO(body)).replace(-999, np.nan)
@@ -29,13 +29,13 @@ n["date"] = pd.to_datetime(n.YEAR.astype(str)) + pd.to_timedelta(n.DOY - 1, unit
 nasa = n.rename(columns={"T2M": "tmean", "RH2M": "rh", "WS10M": "wind_ms",
                          "PRECTOTCORR": "prcp"})[["date", "tmean", "rh", "wind_ms", "prcp"]]
 
-# --- NOAA GHCN-Daily (birlestir.py ile aynı)
+# NOAA GHCN-Daily (birlestir.py ile aynı)
 o = pd.read_csv("noaa_2026.csv")
 o["date"] = pd.to_datetime(o.DATE)
 noaa = o.rename(columns={"TAVG": "tmean", "TMAX": "tmax", "TMIN": "tmin", "PRCP": "prcp"})[
     ["date", "tmean", "tmax", "tmin", "prcp"]]
 
-# --- Open-Meteo (birlestir.py ile aynı: sütunlar ada göre bulunur)
+# Open-Meteo (birlestir.py ile aynı: sütunlar ada göre bulunur)
 lines = open("open_meteo_2026.csv", encoding="utf-8").read().replace("\r", "").split("\n")
 heads = [i for i, l in enumerate(lines) if l.startswith("time,")]
 i_h, i_d = heads[0], heads[1]
@@ -71,7 +71,7 @@ if "wind_kmh" in om.columns:
     om["wind_ms"] = (om["wind_kmh"] / 3.6).round(2)
 om = om.reset_index()
 
-# --- 2026 takvimi (eksik günler satır olarak kalır)
+# 2026 takvimi (eksik günler satır olarak kalır)
 cal = pd.DataFrame({"date": pd.date_range("2026-01-01", BITIS)})
 cols = ["tmean", "tmax", "tmin", "rh", "wind_ms", "prcp", "rad_mj"]
 frames = []
@@ -95,7 +95,7 @@ wide = long.pivot(index="date", columns="source", values=["tmean", "tmax", "tmin
 wide.columns = [f"{v}_{s}" for v, s in wide.columns]
 wide.reset_index().to_csv("ecoprove_wide_2026.csv", index=False)
 
-# --- kontrol: 2020-2025 satırları birebir aynı kaldı mı?
+# kontrol: 2020-2025 satırları birebir aynı kaldı mı?
 geri = pd.read_csv("ecoprove_long_2026.csv", parse_dates=["date"])
 ilk = geri[geri.date <= "2025-12-31"].reset_index(drop=True)
 ayni = ilk.equals(pd.read_csv("ecoprove_long.csv", parse_dates=["date"]))

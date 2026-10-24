@@ -82,7 +82,7 @@ print(out.status.value_counts().to_string())
 temiz = out[out.status != "Missing"]
 print(f"Temiz veride Review+Quarantined oranı (yanlış alarm): %{100 * (temiz.status != 'Trusted').mean():.1f}")
 
-# ---------------------------------------------------------------- demo örnekleri
+# demo örnekleri
 gun = pd.Timestamp("2023-08-15")
 satir = []
 

@@ -20,7 +20,7 @@ from Crypto.Hash import keccak
 from web3 import Web3
 from web3.exceptions import ContractLogicError
 
-# ---------------------------------------------------------------- settings
+# settings
 BASE_DIR = Path(__file__).resolve().parent
 CSV_PATH = BASE_DIR / "data" / "reliability_scores_v1.csv"
 FORECAST_CSV = BASE_DIR / "data" / "tahmin_yillik_2026.csv"
@@ -54,7 +54,7 @@ STATUS_SYMBOLS = {
     "Missing": "square-open",
 }
 
-# Single source of truth for status definitions (aligned on z_eff thresholds)
+# Status metadata and thresholds
 STATUS_META = {
     "Trusted": {
         "short": "z ≤ 3 · score 84–100",
@@ -103,7 +103,7 @@ ABI = [
 ]
 
 
-# ---------------------------------------------- Merkle (same as merkle_kok.py)
+# Merkle (same as merkle_kok.py)
 def k(b):
     return keccak.new(digest_bits=256, data=b).digest()
 
@@ -147,7 +147,7 @@ def hx(b):
     return "0x" + b.hex()
 
 
-# ------------------------------------------------------------------- data
+# data
 def _mtime(path: Path) -> float:
     return path.stat().st_mtime if path.exists() else 0.0
 
@@ -213,7 +213,7 @@ def read_aux_csv(path: Path) -> pd.DataFrame:
     return load_csv_cached(str(path), _mtime(path))
 
 
-# -------------------------------------------------------------- blockchain
+# blockchain
 @st.cache_resource
 def get_contract():
     w3 = Web3(Web3.HTTPProvider(RPC_URL, request_kwargs={"timeout": 15}))
@@ -313,7 +313,7 @@ def threshold_eval_cached(csv_mtime: float, scope_month: str | None, var: str, o
     return d, days
 
 
-# ------------------------------------------------------------------- styles
+# styles
 @st.cache_data
 def get_bg_data_uri(mtime: float) -> str:
     if BG_IMAGE_PATH.exists():
@@ -336,7 +336,7 @@ h1, h2, h3, h4, h5, .stTabs button p, .stButton button p {{
     font-family: 'Plus Jakarta Sans', sans-serif !important;
 }}
 
-/* ---------- Soft Aurora + ClimateChain Circuit Background ---------- */
+/* Soft Aurora + ClimateChain Circuit Background */
 .stApp {{
     background-image:
         linear-gradient(rgba(167, 243, 208, 0.03) 1px, transparent 1px),
@@ -358,7 +358,7 @@ p, li {{color: #dcfce7;}}
 a {{color: #6ee7b7 !important;}}
 .stCaption, [data-testid="stCaptionContainer"] {{color: #bbf7d0 !important; opacity: .9;}}
 
-/* ---------- Soft Frosted Glass Base (no backdrop-filter on expanders to avoid fixed clipping) ---------- */
+/* Glass cards & containers */
 .glass, .card, .net, .hero {{
     background: rgba(10, 46, 36, 0.66) !important;
     backdrop-filter: blur(14px) !important;
@@ -372,7 +372,7 @@ a {{color: #6ee7b7 !important;}}
     border-radius: 14px !important;
 }}
 
-/* ---------- Sidebar ---------- */
+/* Sidebar */
 [data-testid="stSidebar"] {{
     background: rgba(7, 38, 30, 0.78) !important;
     border-right: 1px solid rgba(110, 231, 183, 0.24) !important;
@@ -383,7 +383,7 @@ a {{color: #6ee7b7 !important;}}
               -webkit-background-clip: text; background-clip: text; color: transparent;}}
 .brand-sub {{font-size: .82rem; color: #bbf7d0; margin-bottom: .6rem;}}
 
-/* ---------- Live network widget ---------- */
+/* Live network widget */
 .net {{padding: .85rem .95rem; margin-top: .5rem;}}
 .net-title {{font-size: .7rem; font-weight: 700; color: #86efac; text-transform: uppercase;
             letter-spacing: .1em; margin-bottom: .45rem;}}
@@ -403,7 +403,7 @@ a {{color: #6ee7b7 !important;}}
        border: 1px solid rgba(110, 231, 183, .40); color: #bbf7d0 !important;
        font-family: ui-monospace, monospace; font-size: .78rem; text-decoration: none !important;}}
 
-/* ---------- Compact Hero ---------- */
+/* Compact Hero */
 .hero {{padding: 1.35rem 1.7rem 1.2rem; margin-bottom: .9rem;
        background-image:
            linear-gradient(115deg, rgba(6, 56, 42, 0.90) 0%, rgba(8, 74, 55, 0.80) 55%,
@@ -422,7 +422,7 @@ a {{color: #6ee7b7 !important;}}
        color: #ffffff; padding: .26rem .75rem; border-radius: 999px;
        margin: .65rem .35rem 0 0; font-size: .8rem; font-weight: 500;}}
 
-/* ---------- KPI cards ---------- */
+/* KPI cards */
 .card {{--accent: #34d399; padding: .85rem .95rem; height: 100%; min-width: 0; margin-bottom: .55rem;
        transition: border-color 0.2s ease, box-shadow 0.2s ease; box-shadow: 0 4px 14px rgba(0, 0, 0, .14);}}
 @media (hover: hover) {{
@@ -436,7 +436,7 @@ a {{color: #6ee7b7 !important;}}
               overflow-wrap: anywhere;}}
 .card .note {{font-size: .78rem; color: #bbf7d0; opacity: .85; margin-top: .15rem; line-height: 1.35;}}
 
-/* ---------- Tabs ---------- */
+/* Tabs */
 .stTabs [data-baseweb="tab-list"] {{gap: .35rem; background: rgba(8, 42, 33, .65);
     padding: .35rem; border-radius: 12px; border: 1px solid rgba(110, 231, 183, .22);
     flex-wrap: wrap;}}
@@ -444,7 +444,7 @@ a {{color: #6ee7b7 !important;}}
 .stTabs [aria-selected="true"] {{background: rgba(16, 185, 129, .24);}}
 .stTabs [data-baseweb="tab-highlight"], .stTabs [data-baseweb="tab-border"] {{display: none;}}
 
-/* ---------- Results ---------- */
+/* Results */
 .result {{border-radius: 14px; padding: 1rem 1.2rem; margin: .55rem 0; color: #ffffff;}}
 .result .big {{font-size: 1.3rem; font-weight: 800;}}
 .result-ok {{background: linear-gradient(135deg, rgba(5, 122, 85, .92), rgba(16, 185, 129, .88));}}
@@ -456,7 +456,7 @@ a {{color: #6ee7b7 !important;}}
 .legend i {{display: inline-block; width: 10px; height: 10px; border-radius: 3px;
            margin-right: .35rem;}}
 
-/* ---------- Responsive / Mobile ---------- */
+/* Responsive / Mobile */
 @media (max-width: 768px) {{
   .stApp {{ background-attachment: scroll !important; }}
   .hero {{ padding: 1.1rem 1.2rem; }}
@@ -469,7 +469,7 @@ a {{color: #6ee7b7 !important;}}
 """
 
 
-# ------------------------------------------------------------- UI helpers
+# UI helpers
 def card(col, label, value, color="#ecfdf5", note="", help_text="", accent=None):
     cls = "card accent" if accent else "card"
     style = f' style="--accent:{accent}"' if accent else ""
@@ -570,7 +570,7 @@ STATUS_LEGEND = (
 )
 
 
-# ============================================================ Tab Fragments
+# Tab Fragments
 @st.fragment
 def render_overview_group(month: str):
     data = load_data()
@@ -588,7 +588,7 @@ def render_overview_group(month: str):
         quar_cnt = int(counts.get("Quarantined", 0))
         miss_cnt = int(counts.get("Missing", 0))
 
-        # 3 + 3 two-row responsive KPI layout
+        
         r1c1, r1c2, r1c3 = st.columns(3)
         card(r1c1, "Records", len(m), note=f"{m.source.nunique()} sources · {month}",
              help_text=TIP["records"], accent=CYAN)
@@ -1292,7 +1292,7 @@ def render_about():
     st.markdown(f"### On-Chain Contract\n- Ethereum Sepolia Etherscan: [{CONTRACT}]({ETHERSCAN_ADDR})")
 
 
-# ===================================================================== Main UI
+# Main UI
 st.set_page_config(page_title="EcoProve AI", page_icon="🌍", layout="wide")
 st.markdown(build_css(_mtime(BG_IMAGE_PATH)), unsafe_allow_html=True)
 
@@ -1304,7 +1304,7 @@ data = load_data()
 months = sorted(data.ay.unique())
 years = sorted({m_str[:4] for m_str in months})
 
-# ------------------------------------------------------------------ sidebar
+# sidebar
 with st.sidebar:
     st.markdown(
         '<div class="brand">🌍 <span>EcoProve AI</span></div>'
@@ -1335,7 +1335,7 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
 
-# --------------------------------------------------------------------- hero
+# hero
 st.markdown(
     """
 <div class="hero">

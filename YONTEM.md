@@ -1,6 +1,6 @@
 # EcoProve AI: Yöntem Belgesi
 
-Bu belge, sistemin her adımını ve kullandığı sayıları açıklar. Rakamlar 2023 test yılına, sentetik (kendi eklediğimiz) hatalara ve küçük örnek sayısına dayanır; genel bir başarı garantisi değildir. README'deki sayılar kendi çalıştırmanızla güncellenmelidir.
+Bu belge, sistemin her adımını ve kullandığı sayıları açıklar. Sentetik hata testleri 2023 test yılına ve kontrollü hata senaryolarına dayanır.
 
 ## 1. Veri
 

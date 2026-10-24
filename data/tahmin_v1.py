@@ -12,14 +12,14 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-# ---------------------------------------------------------------- 1) veri
+# 1) veri
 d = pd.read_csv("ecoprove_long.csv", parse_dates=["date"])
 s = d[d.source == "OPEN_METEO_ERA5"].set_index("date")["tmean"].sort_index()
 assert s.notna().all(), "ERA5 serisinde eksik gün var"
 
 egitim_son, test_yil = 2022, 2023
 
-# ---------------------------------------------------------------- 2) özellikler
+# 2) özellikler
 # KURAL: sadece geçmişi kullan (shift). Aynı günün başka kaynak değerleri YOK.
 df = pd.DataFrame({"y": s})
 for g in [1, 2, 3, 7]:
@@ -45,12 +45,12 @@ tr = df[df.index.year <= egitim_son]
 te = df[df.index.year == test_yil]
 X = [c for c in df.columns if c != "y"]
 
-# ---------------------------------------------------------------- 3) baseline'lar
+# 3) baseline'lar
 tahmin = pd.DataFrame({"gercek": te.y})
 tahmin["persistence"] = te.lag1          # dünkü değer
 tahmin["iklimatoloji"] = te.iklim        # o günün çok yıllık ortalaması
 
-# ---------------------------------------------------------------- 4) LightGBM
+# 4) LightGBM
 # Model sıcaklığın kendisini değil, "dünden ne kadar değişecek" farkını öğrenir (y - lag1).
 # Sonra tahmin = dün + öğrenilen fark. Bu, gün-gün sıcaklıkta persistence'ı geçmek için daha kolay yol.
 ortak = dict(n_estimators=300, learning_rate=0.03, num_leaves=8,
@@ -65,7 +65,7 @@ tahmin["ust"] = te.lag1 + ust.predict(te[X])
 tahmin["alt"] = np.minimum(tahmin.alt, tahmin.lightgbm)   # aralık tahmini içermeli
 tahmin["ust"] = np.maximum(tahmin.ust, tahmin.lightgbm)
 
-# ---------------------------------------------------------------- 5) sonuçlar
+# 5) sonuçlar
 def mae(a, b): return float(np.mean(np.abs(a - b)))
 def rmse(a, b): return float(np.sqrt(np.mean((a - b) ** 2)))
 print("=== 2023 TEST SONUÇLARI (365 gün) ===")
@@ -83,7 +83,7 @@ print(f"\nEn sıcak %5 gün (n={len(sicak)}): ortalama hata (gerçek - tahmin) =
 
 tahmin.round(2).to_csv("tahmin_2023.csv", index_label="date")
 
-# ---------------------------------------------------------------- 6) grafik
+# 6) grafik
 fig, ax = plt.subplots(figsize=(13, 4.5))
 ax.fill_between(tahmin.index, tahmin.alt, tahmin.ust, color="#2a9d8f", alpha=0.25, label="%90 beklenen aralık")
 ax.plot(tahmin.index, tahmin.lightgbm, color="#264653", lw=1, label="LightGBM tahmini")
