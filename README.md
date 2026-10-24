@@ -4,6 +4,8 @@
 **Track:** IEEE Global ClimateChain Hackathon 2026 — *Track 4: Climate Data & Environmental Monitoring*  
 **Smart Contract (Ethereum Sepolia):** [`0x2b27fd49fd0C8325f8FE389a49BDDde1d6feCF89`](https://sepolia.etherscan.io/address/0x2b27fd49fd0C8325f8FE389a49BDDde1d6feCF89)
 
+> 📄 **For judges:** The project report (`EcoProve_AI_Report.pdf`) is located in the root of the submission ZIP, next to this `ecoprove-ai/` folder.
+
 ---
 
 ## 🎯 Problem & Motivation

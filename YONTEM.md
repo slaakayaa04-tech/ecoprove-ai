@@ -1,4 +1,18 @@
-# EcoProve AI: Yöntem Belgesi
+# EcoProve AI: Methodology / Yöntem Belgesi
+
+## English Summary
+
+- **Data:** Daily mean temperature for Ankara, Türkiye from three sources: NASA POWER (MERRA-2 reanalysis, ~1128 m), Open-Meteo ERA5 (reanalysis, ~883 m, reference series) and NOAA GHCN-Daily (Ankara Central station, 891 m). Days with no station data are kept as `Missing`, never deleted.
+- **Bias correction:** Systematic, season-dependent differences (mainly elevation) are removed using the monthly mean difference of each source from ERA5, computed only on training years.
+- **Forecast model:** LightGBM learns the day-to-day change using only past information (lags of 1, 2, 3 and 7 days, 7- and 30-day rolling means, day-of-year terms, climatology). No same-day values from other sources are used, so there is no leakage. Two quantile models (5% and 95%) give a 90% expected band. Evaluation is walk-forward: each test year is trained only on earlier years.
+- **Reliability score:** `z_eff = z_cross + z_interval + 3 × repeat`, where `z_cross` is the bias-corrected deviation from the cross-source median (scaled by that source's typical deviation), `z_interval` is the distance outside the 90% band relative to its half-width, and `repeat` flags a value repeated three days in a row. Status: `z_eff ≤ 3` Trusted, `3–6` Review, `> 6` Quarantined. Displayed score = `100 × 2^(-(z_eff/6)^2)`. Quarantine is not deletion.
+- **Fault test:** Known faults (±15 °C spikes, °C/°F unit errors, stuck sensors, gradual drift) are injected into clean 2023 NOAA data, plus real multi-source extremes (+7 °C on all sources) that must not be quarantined. Repeated with 10 random seeds and several thresholds, and compared to a single-series `|z| > 3` baseline.
+- **Blockchain:** Each record becomes a `keccak256` leaf of `date|source|tmean|score|status`. Leaves are combined into a sorted-pair Merkle tree per month, and only the monthly root and record count are written to the `EcoProveRegistry` contract on Sepolia. A month cannot be overwritten once stored.
+- **Limitations:** The chain proves records were not changed after sealing, not that they are physically correct. NASA POWER and ERA5 are both reanalysis products and not fully independent. Faults are synthetic. Single city, single variable, testnet only.
+
+The detailed Turkish version follows below.
+
+---
 
 Bu belge, sistemin her adımını ve kullandığı sayıları açıklar. Sentetik hata testleri 2023 test yılına ve kontrollü hata senaryolarına dayanır.
 
