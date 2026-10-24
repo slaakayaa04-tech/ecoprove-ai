@@ -322,57 +322,11 @@ def get_bg_data_uri(mtime: float) -> str:
     return ""
 
 
-def is_light_mode() -> bool:
-    return st.session_state.get("theme_mode") == "☀️ Light"
-
-
 @st.cache_data
-def build_css(bg_mtime: float, is_light: bool = False) -> str:
+def build_css(bg_mtime: float) -> str:
     bg_uri = get_bg_data_uri(bg_mtime)
     bg_img_layer = f", url('{bg_uri}')" if bg_uri else ""
     hero_img_layer = f", url('{bg_uri}')" if bg_uri else ""
-    light_overrides = """
-/* ---------- Light Theme Overrides ---------- */
-.stApp {
-    background: linear-gradient(160deg, #f8fafc 0%, #f0fdf4 55%, #ecfdf5 100%) !important;
-    background-image: none !important;
-}
-[data-testid="stHeader"] {background: rgba(255, 255, 255, 0.85) !important; backdrop-filter: blur(10px);}
-h1, h2, h3, h4, h5 {color: #064e3b !important;}
-p, li, label, [data-testid="stWidgetLabel"] p {color: #1e293b !important;}
-a {color: #059669 !important;}
-.stCaption, [data-testid="stCaptionContainer"] {color: #475569 !important; opacity: 1;}
-.glass, .card, .net {
-    background: #ffffff !important;
-    border: 1px solid #cbd5e1 !important;
-    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06) !important;
-}
-[data-testid="stExpander"] details {
-    background: #ffffff !important;
-    border: 1px solid #cbd5e1 !important;
-}
-[data-testid="stExpander"] summary p {color: #0f172a !important; font-weight: 600;}
-[data-testid="stSidebar"] {
-    background: #ffffff !important;
-    border-right: 1px solid #e2e8f0 !important;
-}
-.brand {color: #064e3b !important;}
-.brand span {background: linear-gradient(90deg, #065f46, #059669, #0284c7);
-             -webkit-background-clip: text; background-clip: text; color: transparent;}
-.brand-sub {color: #475569 !important;}
-.net-title {color: #059669 !important;}
-.net-row {color: #0f172a !important;}
-.net-sub {color: #475569 !important;}
-.addr {background: #ecfdf5 !important; border: 1px solid #6ee7b7 !important; color: #065f46 !important;}
-.card .label {color: #475569 !important;}
-.card .note {color: #64748b !important; opacity: 1;}
-.stTabs [data-baseweb="tab-list"] {background: #f1f5f9 !important; border: 1px solid #cbd5e1 !important;}
-.stTabs [data-baseweb="tab"] p {color: #334155 !important; font-weight: 600;}
-.stTabs [aria-selected="true"] {background: #ffffff !important; box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);}
-.stTabs [aria-selected="true"] p {color: #059669 !important;}
-.step {color: #059669 !important;}
-.legend {color: #1e293b !important;}
-""" if is_light else ""
     return f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
@@ -502,8 +456,6 @@ a {{color: #6ee7b7 !important;}}
 .legend i {{display: inline-block; width: 10px; height: 10px; border-radius: 3px;
            margin-right: .35rem;}}
 
-{light_overrides}
-
 /* ---------- Responsive / Mobile ---------- */
 @media (max-width: 768px) {{
   .stApp {{ background-attachment: scroll !important; }}
@@ -519,8 +471,6 @@ a {{color: #6ee7b7 !important;}}
 
 # ------------------------------------------------------------- UI helpers
 def card(col, label, value, color="#ecfdf5", note="", help_text="", accent=None):
-    if color == "#ecfdf5" and is_light_mode():
-        color = "#0f172a"
     cls = "card accent" if accent else "card"
     style = f' style="--accent:{accent}"' if accent else ""
     title_attr = f' title="{ (help_text or "").replace(chr(34), "&quot;") }"' if help_text else ""
@@ -551,20 +501,15 @@ def sub_nav(label: str, options: list[str], key: str) -> str:
 
 
 def style_fig(fig, height=330):
-    light = is_light_mode()
-    grid = "rgba(15, 23, 42, 0.08)" if light else "rgba(167, 243, 208, 0.10)"
-    line_col = "rgba(15, 23, 42, 0.20)" if light else "rgba(167, 243, 208, 0.25)"
-    font_col = "#1e293b" if light else "#d1fae5"
-    hover_bg = "#ffffff" if light else "#022c22"
-    hover_fg = "#0f172a" if light else "#ecfdf5"
+    grid = "rgba(167, 243, 208, 0.10)"
     fig.update_layout(
-        template="plotly_white" if light else "plotly_dark",
+        template="plotly_dark",
         height=height,
         dragmode=False,
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
         margin=dict(l=8, r=8, t=24, b=48),
-        font=dict(family="Plus Jakarta Sans, sans-serif", color=font_col, size=13),
+        font=dict(family="Plus Jakarta Sans, sans-serif", color="#d1fae5", size=13),
         legend=dict(
             orientation="h",
             yanchor="top",
@@ -575,13 +520,13 @@ def style_fig(fig, height=330):
             bgcolor="rgba(0,0,0,0)",
         ),
         hoverlabel=dict(
-            bgcolor=hover_bg,
+            bgcolor="#022c22",
             bordercolor="#10b981",
-            font=dict(color=hover_fg, family="Plus Jakarta Sans, sans-serif"),
+            font=dict(color="#ecfdf5", family="Plus Jakarta Sans, sans-serif"),
         ),
     )
-    fig.update_xaxes(gridcolor=grid, zeroline=False, fixedrange=True, linecolor=line_col)
-    fig.update_yaxes(gridcolor=grid, zeroline=False, fixedrange=True, linecolor=line_col)
+    fig.update_xaxes(gridcolor=grid, zeroline=False, fixedrange=True, linecolor="rgba(167, 243, 208, 0.25)")
+    fig.update_yaxes(gridcolor=grid, zeroline=False, fixedrange=True, linecolor="rgba(167, 243, 208, 0.25)")
     return fig
 
 
@@ -876,7 +821,7 @@ def render_ai_group(month: str):
                     x=sub_fc["date"], y=sub_fc["gercek"],
                     mode="lines+markers" if len(sub_fc) <= 40 else "lines",
                     name="Actual Temperature (°C)",
-                    line=dict(color="#0f172a" if is_light_mode() else "#ffffff", width=2.4),
+                    line=dict(color="#ffffff", width=2.4),
                 ))
                 fig_fc.add_trace(go.Scatter(
                     x=sub_fc["date"], y=sub_fc["lightgbm"],
@@ -1349,6 +1294,7 @@ def render_about():
 
 # ===================================================================== Main UI
 st.set_page_config(page_title="EcoProve AI", page_icon="🌍", layout="wide")
+st.markdown(build_css(_mtime(BG_IMAGE_PATH)), unsafe_allow_html=True)
 
 if not CSV_PATH.exists():
     st.error(f"Data file not found: {CSV_PATH}")
@@ -1365,7 +1311,6 @@ with st.sidebar:
         '<div class="brand-sub">Trust Layer for Climate Data · Ankara, Türkiye</div>',
         unsafe_allow_html=True,
     )
-    sub_nav("Theme", ["🌙 Dark", "☀️ Light"], key="theme_mode")
     default_yr = "2023" if "2023" in years else years[-1]
     sy1, sy2 = st.columns(2)
     sel_yr = sy1.selectbox("Year", years, index=years.index(default_yr))
@@ -1389,8 +1334,6 @@ with st.sidebar:
 """,
         unsafe_allow_html=True,
     )
-
-st.markdown(build_css(_mtime(BG_IMAGE_PATH), is_light_mode()), unsafe_allow_html=True)
 
 # --------------------------------------------------------------------- hero
 st.markdown(
